@@ -1,26 +1,35 @@
-name = "matching-site"
-main = "worker.js"
+name = "matching-app"
+main = "src/worker.js"
 compatibility_date = "2025-06-01"
 compatibility_flags = ["nodejs_compat"]
 
+# 静的ファイル（public/）を同じ Worker から配信。/api/* 以外はここが処理
 [assets]
 directory = "./public"
 binding = "ASSETS"
 
+# --- D1（DB）--- `wrangler d1 create matching` で出た id を入れる
 [[d1_databases]]
 binding = "DB"
 database_name = "matching"
 database_id = "REPLACE_WITH_D1_ID"
 
+# --- KV（セッション）--- `wrangler kv namespace create SESSIONS`
 [[kv_namespaces]]
 binding = "SESSIONS"
 id = "REPLACE_WITH_KV_ID"
 
+# --- R2（プロフィール写真）--- `wrangler r2 bucket create matching-photos`
 [[r2_buckets]]
 binding = "PHOTOS"
 bucket_name = "matching-photos"
 
 [vars]
-APP_URL = "https://matching-site.example.workers.dev"
+APP_URL = "https://matching-app.example.workers.dev"
+# Stripe の price ID（ダッシュボードで作成した月額サブスク）
 STRIPE_PRICE_STANDARD = "price_xxx_standard"
 STRIPE_PRICE_PREMIUM  = "price_xxx_premium"
+
+# シークレットはコミットしない。以下で登録：
+#   wrangler secret put STRIPE_SECRET_KEY
+#   wrangler secret put STRIPE_WEBHOOK_SECRET
