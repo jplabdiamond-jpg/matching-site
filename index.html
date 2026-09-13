@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ソワレ — 同じ立場で出会うマッチング</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FBF6F4; --surface:#fff; --ink:#2C2430; --muted:#8A7F86;
+    --anchor:#5C2A45; --accent:#C56B72; --safe:#5E7C6E; --line:#EBE1DE;
+    --shadow:0 1px 2px rgba(44,36,48,.05), 0 8px 24px rgba(92,42,69,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Noto Sans JP",sans-serif;-webkit-font-smoothing:antialiased;line-height:1.7}
+  .mincho{font-family:"Shippori Mincho",serif}
+  a{color:inherit}
+  header{position:sticky;top:0;z-index:20;background:rgba(251,246,244,.9);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .bar{max-width:1080px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px}
+  .brand{font-family:"Shippori Mincho",serif;font-weight:600;font-size:22px;letter-spacing:.14em;color:var(--anchor)}
+  .brand small{display:block;font-family:"Noto Sans JP";font-weight:400;font-size:10px;letter-spacing:.24em;color:var(--muted);margin-top:2px}
+  .spacer{flex:1}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:999px;font-size:14px}
+  .ghost{background:transparent;color:var(--anchor);padding:9px 16px}
+  .ghost:hover{background:#F3E9E7}
+  .solid{background:var(--anchor);color:#fff;padding:9px 20px}
+  .solid:hover{background:#4a2138}
+
+  .lead{max-width:1080px;margin:0 auto;padding:40px 20px 8px}
+  .lead h1{font-family:"Shippori Mincho",serif;font-weight:500;font-size:clamp(26px,4.4vw,40px);
+    line-height:1.5;margin:0 0 12px;color:var(--anchor)}
+  .lead p{max-width:34em;color:var(--muted);margin:0}
+
+  .filters{max-width:1080px;margin:24px auto 0;padding:0 20px;display:flex;flex-wrap:wrap;gap:10px}
+  .filters select{font-family:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--line);
+    border-radius:10px;background:var(--surface);color:var(--ink);min-width:120px}
+
+  .grid{max-width:1080px;margin:20px auto 80px;padding:0 20px;
+    display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    box-shadow:var(--shadow);cursor:pointer;transition:transform .18s ease}
+  .card:hover{transform:translateY(-3px)}
+  .ava{aspect-ratio:4/5;display:grid;place-items:center;position:relative}
+  .ava span{font-family:"Shippori Mincho",serif;font-size:44px;color:rgba(255,255,255,.92)}
+  .badge{position:absolute;top:10px;left:10px;background:var(--safe);color:#fff;
+    font-size:11px;padding:3px 9px;border-radius:999px;letter-spacing:.04em}
+  .info{padding:12px 14px 15px}
+  .name{font-weight:500;font-size:16px}
+  .name b{font-weight:700}
+  .meta{color:var(--muted);font-size:13px;margin:2px 0 8px}
+  .tag{font-family:"Shippori Mincho",serif;font-size:13.5px;color:#6a5d64;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
+
+  /* modal */
+  .scrim{position:fixed;inset:0;background:rgba(44,36,48,.5);backdrop-filter:blur(2px);
+    display:none;place-items:center;z-index:40;padding:20px}
+  .scrim.on{display:grid}
+  .modal{background:var(--surface);border-radius:20px;max-width:420px;width:100%;
+    padding:26px;box-shadow:0 20px 60px rgba(44,36,48,.25)}
+  .modal h2{font-family:"Shippori Mincho",serif;font-weight:500;margin:0 0 4px;color:var(--anchor)}
+  .modal .big{width:88px;height:88px;border-radius:50%;display:grid;place-items:center;margin:6px 0 14px}
+  .modal .big span{font-family:"Shippori Mincho",serif;font-size:38px;color:#fff}
+  .field{display:block;margin:10px 0}
+  .field label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+  .field input,.field select{width:100%;padding:11px 12px;border:1px solid var(--line);
+    border-radius:10px;font-family:inherit;font-size:15px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .full{width:100%;padding:13px;margin-top:14px;font-size:15px}
+  .err{color:#b0475a;font-size:13px;min-height:1.2em;margin-top:6px}
+  .switch{text-align:center;margin-top:14px;font-size:13px;color:var(--muted)}
+  .switch a{color:var(--accent);cursor:pointer;text-decoration:underline}
+  .note{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--anchor);
+    color:#fff;padding:12px 22px;border-radius:999px;font-size:14px;opacity:0;transition:.3s;z-index:60;pointer-events:none}
+  .toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand">ソワレ<small>SOIRÉE MATCHING</small></div>
+    <div class="spacer"></div>
+    <button class="ghost" id="loginBtn">ログイン</button>
+    <button class="solid" id="signupBtn">はじめる</button>
+  </div>
+</header>
+
+<section class="lead">
+  <h1>同じ立場だからこそ、<br>肩の力を抜いて話せる。</h1>
+  <p>安心してつながることを大切にした、大人のためのマッチング。まずは気になる人を探してみてください。</p>
+</section>
+
+<div class="filters">
+  <select id="fGender"><option value="">性別すべて</option><option value="female">女性</option><option value="male">男性</option><option value="other">その他</option></select>
+  <select id="fArea"><option value="">エリアすべて</option><option>東京都</option><option>神奈川県</option><option>大阪府</option><option>愛知県</option><option>福岡県</option><option>北海道</option></select>
+  <select id="fAge"><option value="">年齢すべて</option><option value="20,29">20代</option><option value="30,39">30代</option><option value="40,49">40代</option><option value="50,120">50代以上</option></select>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<!-- 認証モーダル -->
+<div class="scrim" id="authScrim">
+  <div class="modal">
+    <h2 id="authTitle" class="mincho">はじめる</h2>
+    <div id="authFields"></div>
+    <div class="err" id="authErr"></div>
+    <button class="solid full" id="authSubmit">登録する</button>
+    <div class="switch" id="authSwitch"></div>
+    <div class="note">18歳以上の方のみご利用いただけます。登録により利用規約に同意したものとみなします。</div>
+  </div>
+</div>
+
+<!-- プロフィールモーダル -->
+<div class="scrim" id="pScrim">
+  <div class="modal" id="pModal"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const AREAS=['東京都','神奈川県','大阪府','愛知県','福岡県','北海道'];
+const GRAD=['linear-gradient(135deg,#C56B72,#5C2A45)','linear-gradient(135deg,#7C6A9C,#3f3557)',
+  'linear-gradient(135deg,#5E7C6E,#37473f)','linear-gradient(135deg,#C98B6B,#7a4b34)',
+  'linear-gradient(135deg,#8C6B9C,#4a3557)','linear-gradient(135deg,#6B8CA0,#33505f)'];
+const grad=s=>GRAD[[...s].reduce((a,c)=>a+c.charCodeAt(0),0)%GRAD.length];
+const gLabel={female:'女性',male:'男性',other:'その他'};
+let me=null;
+
+async function api(path,opts={}){
+  const r=await fetch('/api'+path,{headers:{'Content-Type':'application/json'},credentials:'same-origin',...opts});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.error||'エラーが発生しました');
+  return d;
+}
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2200);}
+
+async function loadMe(){ try{me=await api('/me');renderAuthState();}catch{me=null;} }
+function renderAuthState(){
+  document.getElementById('loginBtn').style.display=me?'none':'';
+  document.getElementById('signupBtn').textContent=me?`${me.display_name} さん`:'はじめる';
+}
+
+async function loadProfiles(){
+  const g=document.getElementById('fGender').value;
+  const a=document.getElementById('fArea').value;
+  const [min,max]=(document.getElementById('fAge').value||'').split(',');
+  const qs=new URLSearchParams();
+  if(g)qs.set('gender',g); if(a)qs.set('area',a);
+  if(min)qs.set('min',min); if(max)qs.set('max',max);
+  const {items}=await api('/profiles?'+qs.toString());
+  const grid=document.getElementById('grid');
+  grid.innerHTML = items.length? '' : '<p style="color:var(--muted)">条件に合う方が見つかりませんでした。</p>';
+  for(const it of items){
+    const el=document.createElement('div'); el.className='card';
+    el.innerHTML=`
+      <div class="ava" style="background:${grad(it.display_name)}">
+        ${it.verified?'<div class="badge">本人確認済み</div>':''}
+        <span>${it.display_name[0]}</span>
+      </div>
+      <div class="info">
+        <div class="name"><b>${it.display_name}</b> ${it.age}</div>
+        <div class="meta">${gLabel[it.gender]||''}・${it.area}</div>
+        <div class="tag">${it.tagline||''}</div>
+      </div>`;
+    el.onclick=()=>openProfile(it);
+    grid.appendChild(el);
+  }
+}
+['fGender','fArea','fAge'].forEach(id=>document.getElementById(id).onchange=loadProfiles);
+
+function openProfile(it){
+  const m=document.getElementById('pModal');
+  m.innerHTML=`
+    <div class="big" style="background:${grad(it.display_name)}"><span>${it.display_name[0]}</span></div>
+    <h2 class="mincho">${it.display_name} <span style="font-size:18px">${it.age}</span></h2>
+    <div class="meta" style="color:var(--muted)">${gLabel[it.gender]||''}・${it.area} ${it.verified?'・<span style="color:var(--safe)">本人確認済み</span>':''}</div>
+    <p class="mincho" style="color:#6a5d64;margin:14px 0">${it.tagline||''}</p>
+    <button class="solid full" id="likeBtn">いいねを送る</button>`;
+  document.getElementById('pScrim').classList.add('on');
+  document.getElementById('likeBtn').onclick=()=>sendLike(it.user_id);
+}
+async function sendLike(to){
+  if(!me){ closeAll(); openAuth('signup'); return; }
+  try{
+    const r=await api('/like',{method:'POST',body:JSON.stringify({to_id:to})});
+    closeAll();
+    toast(r.matched?'マッチしました！メッセージを送れます':'いいねを送りました');
+  }catch(e){ toast(e.message); }
+}
+
+/* ---- 認証モーダル ---- */
+function openAuth(mode){
+  const isSignup=mode==='signup';
+  document.getElementById('authTitle').textContent=isSignup?'はじめる':'ログイン';
+  document.getElementById('authSubmit').textContent=isSignup?'登録する':'ログイン';
+  document.getElementById('authErr').textContent='';
+  document.getElementById('authFields').innerHTML = isSignup ? `
+    <div class="field"><label>ニックネーム</label><input id="aName" placeholder="あおい"></div>
+    <div class="row2">
+      <div class="field"><label>性別</label><select id="aGender"><option value="female">女性</option><option value="male">男性</option><option value="other">その他</option></select></div>
+      <div class="field"><label>年齢</label><input id="aAge" type="number" min="18" placeholder="34"></div>
+    </div>
+    <div class="field"><label>エリア</label><select id="aArea">${AREAS.map(a=>`<option>${a}</option>`).join('')}</select></div>
+    <div class="field"><label>メールアドレス</label><input id="aEmail" type="email"></div>
+    <div class="field"><label>パスワード</label><input id="aPass" type="password"></div>`
+  : `
+    <div class="field"><label>メールアドレス</label><input id="aEmail" type="email"></div>
+    <div class="field"><label>パスワード</label><input id="aPass" type="password"></div>`;
+  document.getElementById('authSwitch').innerHTML = isSignup
+    ? 'アカウントをお持ちですか？ <a onclick="openAuth(\'login\')">ログイン</a>'
+    : 'はじめての方は <a onclick="openAuth(\'signup\')">アカウント作成</a>';
+  document.getElementById('authSubmit').onclick=()=>submitAuth(isSignup);
+  document.getElementById('authScrim').classList.add('on');
+}
+async function submitAuth(isSignup){
+  const err=document.getElementById('authErr'); err.textContent='';
+  const body={email:v('aEmail'),password:v('aPass')};
+  if(isSignup)Object.assign(body,{display_name:v('aName'),gender:v('aGender'),age:v('aAge'),area:v('aArea')});
+  try{
+    await api(isSignup?'/signup':'/login',{method:'POST',body:JSON.stringify(body)});
+    closeAll(); await loadMe(); await loadProfiles(); toast('ようこそ');
+  }catch(e){ err.textContent=e.message; }
+}
+const v=id=>document.getElementById(id).value.trim();
+
+function closeAll(){document.querySelectorAll('.scrim').forEach(s=>s.classList.remove('on'));}
+document.querySelectorAll('.scrim').forEach(s=>s.onclick=e=>{if(e.target===s)closeAll();});
+document.getElementById('loginBtn').onclick=()=>openAuth('login');
+document.getElementById('signupBtn').onclick=()=>me?location.reload():openAuth('signup');
+
+loadMe(); loadProfiles();
+</script>
+</body>
+</html>
