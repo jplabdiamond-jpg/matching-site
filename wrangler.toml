@@ -17,7 +17,7 @@ database_id = "778dc200-3819-4943-a518-cffd0f71be1c"
 # --- KV（セッション）--- `wrangler kv namespace create SESSIONS`
 [[kv_namespaces]]
 binding = "SESSIONS"
-id = "REPLACE_WITH_KV_ID"
+id = "38a6d24676d8443da1e42e1c3767d600"
 
 # --- R2（プロフィール写真）--- `wrangler r2 bucket create matching-photos`
 [[r2_buckets]]
