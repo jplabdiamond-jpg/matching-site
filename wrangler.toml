@@ -1,4 +1,4 @@
-name = "matching-app"
+name = "matching-site"
 main = "worker.js"
 compatibility_date = "2025-06-01"
 compatibility_flags = ["nodejs_compat"]
@@ -25,7 +25,7 @@ binding = "PHOTOS"
 bucket_name = "matching-photos"
 
 [vars]
-APP_URL = "https://matching-app.example.workers.dev"
+APP_URL = "https://matching-site.jp-lab-diamond.workers.dev"
 # Stripe の price ID（ダッシュボードで作成した月額サブスク）
 STRIPE_PRICE_STANDARD = "price_xxx_standard"
 STRIPE_PRICE_PREMIUM  = "price_xxx_premium"
@@ -33,3 +33,4 @@ STRIPE_PRICE_PREMIUM  = "price_xxx_premium"
 # シークレットはコミットしない。以下で登録：
 #   wrangler secret put STRIPE_SECRET_KEY
 #   wrangler secret put STRIPE_WEBHOOK_SECRET
+GOOGLE_CLIENT_ID = "765477829617-l0mro3nmgb4cu70mhnigqeu5v0r0r60o.apps.googleusercontent.com"
