@@ -150,7 +150,7 @@ async function googleCallback(request, env) {
       'INSERT INTO users (id,email,pass_hash,plan,age_verified,email_verified,created_at) VALUES (?,?,?,?,?,?,?)')
       .bind(uid, gi.email, '', 'free', 0, 1, Date.now()).run();
   }
-  const res = Response.redirect(`${origin}/`, 302);
+  const res = new Response(null, { status: 302, headers: { Location: `${origin}/` } });
   return withSession(uid, env, res);
 }
 
