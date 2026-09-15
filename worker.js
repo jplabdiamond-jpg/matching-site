@@ -28,6 +28,9 @@ async function route(request, env, url) {
   if (p === '/api/login'    && m === 'POST') return login(request, env);
   if (p === '/api/logout'   && m === 'POST') return logout(request, env);
   if (p === '/api/me'       && m === 'GET')  return me(request, env);
+  if (p === '/api/auth/google'          && m === 'GET') return googleStart(request, env);
+  if (p === '/api/auth/google/callback' && m === 'GET') return googleCallback(request, env);
+  if (p === '/api/onboard'  && m === 'POST') return onboard(request, env);
   if (p === '/api/profiles' && m === 'GET')  return listProfiles(request, env, url);
   if (p === '/api/like'     && m === 'POST') return like(request, env);
   if (p === '/api/matches'  && m === 'GET')  return listMatches(request, env);
@@ -89,9 +92,81 @@ async function me(request, env) {
   const uid = await auth(request, env);
   if (!uid) return json({ error: 'unauthorized' }, 401);
   const u = await env.DB.prepare(
-    `SELECT u.id,u.email,u.plan,p.display_name,p.gender,p.age,p.area,p.verified,p.photo_key
-     FROM users u JOIN profiles p ON p.user_id=u.id WHERE u.id=?`).bind(uid).first();
+    `SELECT u.id,u.email,u.plan,u.email_verified,p.display_name,p.gender,p.age,p.area,p.verified,p.photo_key
+     FROM users u LEFT JOIN profiles p ON p.user_id=u.id WHERE u.id=?`).bind(uid).first();
+  if (u) u.needs_onboarding = u.display_name ? 0 : 1;
   return json(u);
+}
+
+// ---------- Google OAuth ----------
+async function googleStart(request, env) {
+  const origin = new URL(request.url).origin;
+  const state = uuid();
+  await env.SESSIONS.put('oauth:' + state, '1', { expirationTtl: 600 });
+  const p = new URLSearchParams({
+    client_id: env.GOOGLE_CLIENT_ID,
+    redirect_uri: `${origin}/api/auth/google/callback`,
+    response_type: 'code',
+    scope: 'openid email profile',
+    state,
+    prompt: 'select_account',
+  });
+  return Response.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${p}`, 302);
+}
+
+async function googleCallback(request, env) {
+  const url = new URL(request.url), origin = url.origin;
+  const code = url.searchParams.get('code'), state = url.searchParams.get('state');
+  if (!code || !state || !(await env.SESSIONS.get('oauth:' + state)))
+    return Response.redirect(`${origin}/?auth_error=1`, 302);
+  await env.SESSIONS.delete('oauth:' + state);
+
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code, client_id: env.GOOGLE_CLIENT_ID, client_secret: env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: `${origin}/api/auth/google/callback`, grant_type: 'authorization_code',
+    }),
+  });
+  const tok = await tokenRes.json();
+  if (!tokenRes.ok || !tok.access_token) return Response.redirect(`${origin}/?auth_error=1`, 302);
+
+  const uiRes = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+    headers: { Authorization: `Bearer ${tok.access_token}` },
+  });
+  const gi = await uiRes.json();
+  if (!uiRes.ok || !gi.email || gi.email_verified === false)
+    return Response.redirect(`${origin}/?auth_error=1`, 302);
+
+  let u = await env.DB.prepare('SELECT id FROM users WHERE email=?').bind(gi.email).first();
+  let uid;
+  if (u) {
+    uid = u.id;
+    await env.DB.prepare('UPDATE users SET email_verified=1 WHERE id=?').bind(uid).run();
+  } else {
+    uid = uuid();
+    await env.DB.prepare(
+      'INSERT INTO users (id,email,pass_hash,plan,age_verified,email_verified,created_at) VALUES (?,?,?,?,?,?,?)')
+      .bind(uid, gi.email, '', 'free', 0, 1, Date.now()).run();
+  }
+  const res = Response.redirect(`${origin}/`, 302);
+  return withSession(uid, env, res);
+}
+
+async function onboard(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { display_name, gender, age, area } = await request.json();
+  if (!display_name || !gender || !age || !area) return json({ error: '必須項目が不足しています' }, 400);
+  if (Number(age) < 18) return json({ error: '18歳未満はご利用いただけません' }, 400);
+  const now = Date.now();
+  await env.DB.prepare(
+    `INSERT INTO profiles (user_id,display_name,gender,age,area,verified,last_active,created_at)
+     VALUES (?,?,?,?,?,?,?,?)
+     ON CONFLICT(user_id) DO UPDATE SET display_name=excluded.display_name,gender=excluded.gender,age=excluded.age,area=excluded.area`)
+    .bind(uid, display_name, gender, Number(age), area, 0, now, now).run();
+  return json({ ok: true });
 }
 
 // ---------- explorer ----------

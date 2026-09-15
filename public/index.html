@@ -21,6 +21,12 @@
   .brand{font-family:"Shippori Mincho",serif;font-weight:600;font-size:22px;letter-spacing:.14em;color:var(--anchor)}
   .brand small{display:block;font-family:"Noto Sans JP";font-weight:400;font-size:10px;letter-spacing:.24em;color:var(--muted);margin-top:2px}
   .spacer{flex:1}
+  body:not(.ready) #loginBtn, body:not(.ready) #signupBtn, body:not(.ready) #msgBtn{visibility:hidden}
+  .gbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font-size:15px;font-weight:500}
+  .gbtn:hover{background:#faf5f4}
+  .gbtn svg{width:18px;height:18px}
+  .divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;margin:16px 0}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
   button{font-family:inherit;cursor:pointer;border:none;border-radius:999px;font-size:14px}
   .ghost{background:transparent;color:var(--anchor);padding:9px 16px}
   .ghost:hover{background:#F3E9E7}
@@ -111,6 +117,10 @@
 
 <div class="scrim" id="authScrim"><div class="modal">
   <h2 id="authTitle" class="mincho">はじめる</h2>
+  <button class="gbtn" id="googleBtn" style="margin-top:14px" onclick="location.href='/api/auth/google'">
+    Googleで続ける
+  </button>
+  <div class="divider">または</div>
   <div id="authFields"></div>
   <div class="err" id="authErr"></div>
   <button class="solid full" id="authSubmit">登録する</button>
@@ -121,6 +131,7 @@
 <div class="scrim" id="pScrim"><div class="modal" id="pModal"></div></div>
 <div class="scrim" id="listScrim"><div class="modal" id="listModal"></div></div>
 <div class="scrim" id="chatScrim"><div class="modal" id="chatModal"></div></div>
+<div class="scrim" id="onboardScrim"><div class="modal" id="onboardModal"></div></div>
 
 <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" style="display:none">
 <input type="file" id="verifyInput" accept="image/jpeg,image/png,image/webp,application/pdf" style="display:none">
@@ -152,7 +163,8 @@ async function loadMe(){ try{me=await api('/me');}catch{me=null;} renderAuthStat
 function renderAuthState(){
   document.getElementById('loginBtn').style.display=me?'none':'';
   document.getElementById('msgBtn').style.display=me?'':'none';
-  document.getElementById('signupBtn').textContent=me?`${me.display_name} さん`:'はじめる';
+  document.getElementById('signupBtn').textContent=me?`${me.display_name||'アカウント'} さん`:'はじめる';
+  document.body.classList.add('ready');
 }
 
 async function loadProfiles(){
@@ -317,7 +329,7 @@ function closeAll(){
   document.querySelectorAll('.scrim').forEach(s=>s.classList.remove('on'));
   if(chatState.timer){clearInterval(chatState.timer);chatState.timer=null;}
 }
-document.querySelectorAll('.scrim').forEach(s=>s.onclick=e=>{if(e.target===s)closeAll();});
+document.querySelectorAll('.scrim').forEach(s=>s.onclick=e=>{if(e.target===s&&s.id!=='onboardScrim')closeAll();});
 function toggleMenu(on){document.getElementById('acctMenu').classList.toggle('on',on);}
 document.getElementById('loginBtn').onclick=()=>openAuth('login');
 document.getElementById('msgBtn').onclick=openMessages;
@@ -326,7 +338,37 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('#acctMenu')&&e.target.id!=='signupBtn') toggleMenu(false);
 });
 
-loadMe(); loadProfiles();
+/* ---- onboarding (Googleで初回登録した人のプロフィール作成) ---- */
+function openOnboard(){
+  document.getElementById('onboardModal').innerHTML=`
+    <h2 class="mincho">プロフィールを作成</h2>
+    <p class="note" style="margin:6px 0 4px">はじめまして。表示されるプロフィールを設定してください。</p>
+    <div class="field"><label>ニックネーム</label><input id="oName" placeholder="あおい"></div>
+    <div class="row2">
+      <div class="field"><label>性別</label><select id="oGender"><option value="female">女性</option><option value="male">男性</option><option value="other">その他</option></select></div>
+      <div class="field"><label>年齢</label><input id="oAge" type="number" min="18" placeholder="34"></div></div>
+    <div class="field"><label>エリア</label><select id="oArea">${AREAS.map(a=>`<option>${a}</option>`).join('')}</select></div>
+    <div class="err" id="oErr"></div>
+    <button class="solid full" onclick="submitOnboard()">はじめる</button>`;
+  document.getElementById('onboardScrim').classList.add('on');
+}
+async function submitOnboard(){
+  const err=document.getElementById('oErr'); err.textContent='';
+  try{
+    await jpost('/onboard',{display_name:v('oName'),gender:v('oGender'),age:v('oAge'),area:v('oArea')});
+    document.getElementById('onboardScrim').classList.remove('on');
+    await loadMe(); await loadProfiles(); toast('ようこそ');
+  }catch(e){ err.textContent=e.message; }
+}
+
+(async()=>{
+  await loadMe(); loadProfiles();
+  if(me && me.needs_onboarding) openOnboard();
+  const sp=new URLSearchParams(location.search);
+  if(sp.get('auth_error')) toast('ログインに失敗しました。もう一度お試しください');
+  if(sp.get('upgraded')) toast('アップグレードありがとうございます');
+  if(location.search) history.replaceState({},'',location.pathname);
+})();
 </script>
 </body>
 </html>
