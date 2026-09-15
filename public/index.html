@@ -14,13 +14,10 @@
     --shadow:0 1px 2px rgba(44,36,48,.05), 0 8px 24px rgba(92,42,69,.06);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font-family:"Noto Sans JP",sans-serif;-webkit-font-smoothing:antialiased;line-height:1.7}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans JP",sans-serif;-webkit-font-smoothing:antialiased;line-height:1.7}
   .mincho{font-family:"Shippori Mincho",serif}
-  a{color:inherit}
-  header{position:sticky;top:0;z-index:20;background:rgba(251,246,244,.9);
-    backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-  .bar{max-width:1080px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px}
+  header{position:sticky;top:0;z-index:20;background:rgba(251,246,244,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .bar{max-width:1080px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:12px}
   .brand{font-family:"Shippori Mincho",serif;font-weight:600;font-size:22px;letter-spacing:.14em;color:var(--anchor)}
   .brand small{display:block;font-family:"Noto Sans JP";font-weight:400;font-size:10px;letter-spacing:.24em;color:var(--muted);margin-top:2px}
   .spacer{flex:1}
@@ -29,54 +26,59 @@
   .ghost:hover{background:#F3E9E7}
   .solid{background:var(--anchor);color:#fff;padding:9px 20px}
   .solid:hover{background:#4a2138}
-
   .lead{max-width:1080px;margin:0 auto;padding:40px 20px 8px}
-  .lead h1{font-family:"Shippori Mincho",serif;font-weight:500;font-size:clamp(26px,4.4vw,40px);
-    line-height:1.5;margin:0 0 12px;color:var(--anchor)}
+  .lead h1{font-family:"Shippori Mincho",serif;font-weight:500;font-size:clamp(26px,4.4vw,40px);line-height:1.5;margin:0 0 12px;color:var(--anchor)}
   .lead p{max-width:34em;color:var(--muted);margin:0}
-
   .filters{max-width:1080px;margin:24px auto 0;padding:0 20px;display:flex;flex-wrap:wrap;gap:10px}
-  .filters select{font-family:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--line);
-    border-radius:10px;background:var(--surface);color:var(--ink);min-width:120px}
-
-  .grid{max-width:1080px;margin:20px auto 80px;padding:0 20px;
-    display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;
-    box-shadow:var(--shadow);cursor:pointer;transition:transform .18s ease}
+  .filters select{font-family:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);min-width:120px}
+  .grid{max-width:1080px;margin:20px auto 80px;padding:0 20px;display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:transform .18s ease}
   .card:hover{transform:translateY(-3px)}
-  .ava{aspect-ratio:4/5;display:grid;place-items:center;position:relative}
-  .ava span{font-family:"Shippori Mincho",serif;font-size:44px;color:rgba(255,255,255,.92)}
-  .badge{position:absolute;top:10px;left:10px;background:var(--safe);color:#fff;
-    font-size:11px;padding:3px 9px;border-radius:999px;letter-spacing:.04em}
+  .ava{aspect-ratio:4/5;display:grid;place-items:center;position:relative;overflow:hidden}
+  .ava .ini{font-family:"Shippori Mincho",serif;font-size:44px;color:rgba(255,255,255,.92)}
+  .ava img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+  .badge{position:absolute;top:10px;left:10px;background:var(--safe);color:#fff;font-size:11px;padding:3px 9px;border-radius:999px;letter-spacing:.04em;z-index:2}
   .info{padding:12px 14px 15px}
-  .name{font-weight:500;font-size:16px}
-  .name b{font-weight:700}
+  .name{font-weight:500;font-size:16px}.name b{font-weight:700}
   .meta{color:var(--muted);font-size:13px;margin:2px 0 8px}
-  .tag{font-family:"Shippori Mincho",serif;font-size:13.5px;color:#6a5d64;
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
-
-  /* modal */
-  .scrim{position:fixed;inset:0;background:rgba(44,36,48,.5);backdrop-filter:blur(2px);
-    display:none;place-items:center;z-index:40;padding:20px}
+  .tag{font-family:"Shippori Mincho",serif;font-size:13.5px;color:#6a5d64;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
+  .scrim{position:fixed;inset:0;background:rgba(44,36,48,.5);backdrop-filter:blur(2px);display:none;place-items:center;z-index:40;padding:20px}
   .scrim.on{display:grid}
-  .modal{background:var(--surface);border-radius:20px;max-width:420px;width:100%;
-    padding:26px;box-shadow:0 20px 60px rgba(44,36,48,.25)}
+  .modal{background:var(--surface);border-radius:20px;max-width:440px;width:100%;padding:26px;box-shadow:0 20px 60px rgba(44,36,48,.25);max-height:86vh;overflow:auto}
   .modal h2{font-family:"Shippori Mincho",serif;font-weight:500;margin:0 0 4px;color:var(--anchor)}
-  .modal .big{width:88px;height:88px;border-radius:50%;display:grid;place-items:center;margin:6px 0 14px}
-  .modal .big span{font-family:"Shippori Mincho",serif;font-size:38px;color:#fff}
+  .big{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;margin:6px 0 14px;overflow:hidden;position:relative}
+  .big .ini{font-family:"Shippori Mincho",serif;font-size:38px;color:#fff}
+  .big img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
   .field{display:block;margin:10px 0}
   .field label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
-  .field input,.field select{width:100%;padding:11px 12px;border:1px solid var(--line);
-    border-radius:10px;font-family:inherit;font-size:15px}
+  .field input,.field select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .full{width:100%;padding:13px;margin-top:14px;font-size:15px}
   .err{color:#b0475a;font-size:13px;min-height:1.2em;margin-top:6px}
   .switch{text-align:center;margin-top:14px;font-size:13px;color:var(--muted)}
   .switch a{color:var(--accent);cursor:pointer;text-decoration:underline}
   .note{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6}
-  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--anchor);
-    color:#fff;padding:12px 22px;border-radius:999px;font-size:14px;opacity:0;transition:.3s;z-index:60;pointer-events:none}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--anchor);color:#fff;padding:12px 22px;border-radius:999px;font-size:14px;opacity:0;transition:.3s;z-index:60;pointer-events:none}
   .toast.on{opacity:1}
+  .menu{position:absolute;top:56px;right:20px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:6px;z-index:30;display:none;min-width:190px}
+  .menu.on{display:block}
+  .menu button{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);padding:10px 14px;border-radius:10px;font-size:14px}
+  .menu button:hover{background:#F3E9E7}
+  /* match list */
+  .mrow{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;cursor:pointer}
+  .mrow:hover{background:#F7EFED}
+  .mrow .av{width:46px;height:46px;border-radius:50%;overflow:hidden;position:relative;flex:none;display:grid;place-items:center}
+  .mrow .av .ini{font-family:"Shippori Mincho",serif;color:#fff;font-size:20px}
+  .mrow .av img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+  /* chat */
+  .chatbox{display:flex;flex-direction:column;height:64vh}
+  .msgs{flex:1;overflow:auto;padding:6px 2px;display:flex;flex-direction:column;gap:8px}
+  .b{max-width:78%;padding:9px 13px;border-radius:16px;font-size:14px;line-height:1.5;word-break:break-word}
+  .b.me{align-self:flex-end;background:var(--anchor);color:#fff;border-bottom-right-radius:5px}
+  .b.you{align-self:flex-start;background:#F1E7E4;color:var(--ink);border-bottom-left-radius:5px}
+  .composer{display:flex;gap:8px;margin-top:10px}
+  .composer input{flex:1;padding:11px 14px;border:1px solid var(--line);border-radius:999px;font-family:inherit;font-size:15px}
+  .backlink{background:transparent;color:var(--muted);padding:0;margin-bottom:8px;font-size:13px}
 </style>
 </head>
 <body>
@@ -84,10 +86,16 @@
   <div class="bar">
     <div class="brand">ソワレ<small>SOIRÉE MATCHING</small></div>
     <div class="spacer"></div>
+    <button class="ghost" id="msgBtn" style="display:none">メッセージ</button>
     <button class="ghost" id="loginBtn">ログイン</button>
     <button class="solid" id="signupBtn">はじめる</button>
   </div>
 </header>
+<div class="menu" id="acctMenu">
+  <button onclick="pickPhoto()">プロフィール写真を追加</button>
+  <button onclick="pickVerify()">本人確認を申請</button>
+  <button onclick="doLogout()">ログアウト</button>
+</div>
 
 <section class="lead">
   <h1>同じ立場だからこそ、<br>肩の力を抜いて話せる。</h1>
@@ -99,73 +107,70 @@
   <select id="fArea"><option value="">エリアすべて</option><option>東京都</option><option>神奈川県</option><option>大阪府</option><option>愛知県</option><option>福岡県</option><option>北海道</option></select>
   <select id="fAge"><option value="">年齢すべて</option><option value="20,29">20代</option><option value="30,39">30代</option><option value="40,49">40代</option><option value="50,120">50代以上</option></select>
 </div>
-
 <div class="grid" id="grid"></div>
 
-<!-- 認証モーダル -->
-<div class="scrim" id="authScrim">
-  <div class="modal">
-    <h2 id="authTitle" class="mincho">はじめる</h2>
-    <div id="authFields"></div>
-    <div class="err" id="authErr"></div>
-    <button class="solid full" id="authSubmit">登録する</button>
-    <div class="switch" id="authSwitch"></div>
-    <div class="note">18歳以上の方のみご利用いただけます。登録により利用規約に同意したものとみなします。</div>
-  </div>
-</div>
+<div class="scrim" id="authScrim"><div class="modal">
+  <h2 id="authTitle" class="mincho">はじめる</h2>
+  <div id="authFields"></div>
+  <div class="err" id="authErr"></div>
+  <button class="solid full" id="authSubmit">登録する</button>
+  <div class="switch" id="authSwitch"></div>
+  <div class="note">18歳以上の方のみご利用いただけます。登録により利用規約に同意したものとみなします。</div>
+</div></div>
 
-<!-- プロフィールモーダル -->
-<div class="scrim" id="pScrim">
-  <div class="modal" id="pModal"></div>
-</div>
+<div class="scrim" id="pScrim"><div class="modal" id="pModal"></div></div>
+<div class="scrim" id="listScrim"><div class="modal" id="listModal"></div></div>
+<div class="scrim" id="chatScrim"><div class="modal" id="chatModal"></div></div>
 
+<input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" style="display:none">
+<input type="file" id="verifyInput" accept="image/jpeg,image/png,image/webp,application/pdf" style="display:none">
 <div class="toast" id="toast"></div>
 
 <script>
 const AREAS=['東京都','神奈川県','大阪府','愛知県','福岡県','北海道'];
-const GRAD=['linear-gradient(135deg,#C56B72,#5C2A45)','linear-gradient(135deg,#7C6A9C,#3f3557)',
-  'linear-gradient(135deg,#5E7C6E,#37473f)','linear-gradient(135deg,#C98B6B,#7a4b34)',
-  'linear-gradient(135deg,#8C6B9C,#4a3557)','linear-gradient(135deg,#6B8CA0,#33505f)'];
-const grad=s=>GRAD[[...s].reduce((a,c)=>a+c.charCodeAt(0),0)%GRAD.length];
+const GRAD=['linear-gradient(135deg,#C56B72,#5C2A45)','linear-gradient(135deg,#7C6A9C,#3f3557)','linear-gradient(135deg,#5E7C6E,#37473f)','linear-gradient(135deg,#C98B6B,#7a4b34)','linear-gradient(135deg,#8C6B9C,#4a3557)','linear-gradient(135deg,#6B8CA0,#33505f)'];
+const grad=s=>GRAD[[...String(s)].reduce((a,c)=>a+c.charCodeAt(0),0)%GRAD.length];
 const gLabel={female:'女性',male:'男性',other:'その他'};
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const photoURL=k=>'/api/photo?key='+encodeURIComponent(k);
 let me=null;
 
 async function api(path,opts={}){
-  const r=await fetch('/api'+path,{headers:{'Content-Type':'application/json'},credentials:'same-origin',...opts});
+  const r=await fetch('/api'+path,{credentials:'same-origin',...opts});
   const d=await r.json().catch(()=>({}));
-  if(!r.ok) throw new Error(d.error||'エラーが発生しました');
+  if(!r.ok){const e=new Error(d.error||'エラーが発生しました');e.data=d;e.status=r.status;throw e;}
   return d;
 }
-function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2200);}
+const jpost=(p,b)=>api(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2400);}
+function avatarHTML(o,cls){ // o has display_name + photo_key
+  if(o.photo_key) return `<img src="${photoURL(o.photo_key)}" alt="">`;
+  return `<span class="ini">${esc(String(o.display_name)[0]||'?')}</span>`;
+}
 
-async function loadMe(){ try{me=await api('/me');renderAuthState();}catch{me=null;} }
+async function loadMe(){ try{me=await api('/me');}catch{me=null;} renderAuthState(); }
 function renderAuthState(){
   document.getElementById('loginBtn').style.display=me?'none':'';
+  document.getElementById('msgBtn').style.display=me?'':'none';
   document.getElementById('signupBtn').textContent=me?`${me.display_name} さん`:'はじめる';
 }
 
 async function loadProfiles(){
-  const g=document.getElementById('fGender').value;
-  const a=document.getElementById('fArea').value;
+  const g=document.getElementById('fGender').value,a=document.getElementById('fArea').value;
   const [min,max]=(document.getElementById('fAge').value||'').split(',');
   const qs=new URLSearchParams();
-  if(g)qs.set('gender',g); if(a)qs.set('area',a);
-  if(min)qs.set('min',min); if(max)qs.set('max',max);
+  if(g)qs.set('gender',g); if(a)qs.set('area',a); if(min)qs.set('min',min); if(max)qs.set('max',max);
   const {items}=await api('/profiles?'+qs.toString());
   const grid=document.getElementById('grid');
-  grid.innerHTML = items.length? '' : '<p style="color:var(--muted)">条件に合う方が見つかりませんでした。</p>';
+  grid.innerHTML=items.length?'':'<p style="color:var(--muted)">条件に合う方が見つかりませんでした。</p>';
   for(const it of items){
     const el=document.createElement('div'); el.className='card';
-    el.innerHTML=`
-      <div class="ava" style="background:${grad(it.display_name)}">
-        ${it.verified?'<div class="badge">本人確認済み</div>':''}
-        <span>${it.display_name[0]}</span>
+    el.innerHTML=`<div class="ava" style="background:${grad(it.display_name)}">
+        ${it.verified?'<div class="badge">本人確認済み</div>':''}${avatarHTML(it)}
       </div>
-      <div class="info">
-        <div class="name"><b>${it.display_name}</b> ${it.age}</div>
-        <div class="meta">${gLabel[it.gender]||''}・${it.area}</div>
-        <div class="tag">${it.tagline||''}</div>
-      </div>`;
+      <div class="info"><div class="name"><b>${esc(it.display_name)}</b> ${it.age}</div>
+        <div class="meta">${gLabel[it.gender]||''}・${esc(it.area)}</div>
+        <div class="tag">${esc(it.tagline)}</div></div>`;
     el.onclick=()=>openProfile(it);
     grid.appendChild(el);
   }
@@ -173,46 +178,128 @@ async function loadProfiles(){
 ['fGender','fArea','fAge'].forEach(id=>document.getElementById(id).onchange=loadProfiles);
 
 function openProfile(it){
-  const m=document.getElementById('pModal');
-  m.innerHTML=`
-    <div class="big" style="background:${grad(it.display_name)}"><span>${it.display_name[0]}</span></div>
-    <h2 class="mincho">${it.display_name} <span style="font-size:18px">${it.age}</span></h2>
-    <div class="meta" style="color:var(--muted)">${gLabel[it.gender]||''}・${it.area} ${it.verified?'・<span style="color:var(--safe)">本人確認済み</span>':''}</div>
-    <p class="mincho" style="color:#6a5d64;margin:14px 0">${it.tagline||''}</p>
+  document.getElementById('pModal').innerHTML=`
+    <div class="big" style="background:${grad(it.display_name)}">${avatarHTML(it)}</div>
+    <h2 class="mincho">${esc(it.display_name)} <span style="font-size:18px">${it.age}</span></h2>
+    <div class="meta">${gLabel[it.gender]||''}・${esc(it.area)} ${it.verified?'・<span style="color:var(--safe)">本人確認済み</span>':''}</div>
+    <p class="mincho" style="color:#6a5d64;margin:14px 0">${esc(it.tagline)}</p>
     <button class="solid full" id="likeBtn">いいねを送る</button>`;
   document.getElementById('pScrim').classList.add('on');
   document.getElementById('likeBtn').onclick=()=>sendLike(it.user_id);
 }
 async function sendLike(to){
-  if(!me){ closeAll(); openAuth('signup'); return; }
-  try{
-    const r=await api('/like',{method:'POST',body:JSON.stringify({to_id:to})});
-    closeAll();
-    toast(r.matched?'マッチしました！メッセージを送れます':'いいねを送りました');
-  }catch(e){ toast(e.message); }
+  if(!me){closeAll();openAuth('signup');return;}
+  try{const r=await jpost('/like',{to_id:to});closeAll();toast(r.matched?'マッチしました！メッセージから話しかけられます':'いいねを送りました');}
+  catch(e){toast(e.message);}
 }
 
-/* ---- 認証モーダル ---- */
+/* ---- messages ---- */
+async function openMessages(){
+  if(!me){openAuth('login');return;}
+  const {items}=await api('/matches');
+  const list=items.length?items.map(m=>`
+    <div class="mrow" onclick="openChat('${m.id}','${esc(m.display_name)}')">
+      <div class="av" style="background:${grad(m.display_name)}">${avatarHTML(m)}</div>
+      <div><div style="font-weight:500">${esc(m.display_name)} ${m.age}</div>
+      <div class="meta" style="margin:0">${esc(m.area)}</div></div>
+    </div>`).join(''):'<p style="color:var(--muted)">まだマッチした相手がいません。気になる人に「いいね」を送ってみましょう。</p>';
+  document.getElementById('listModal').innerHTML=`<h2 class="mincho">メッセージ</h2><div style="margin-top:10px">${list}</div>`;
+  document.getElementById('listScrim').classList.add('on');
+}
+
+let chatState={matchId:null,after:0,timer:null};
+async function openChat(matchId,name){
+  closeAll();
+  chatState={matchId,after:0,timer:null};
+  document.getElementById('chatModal').innerHTML=`
+    <button class="backlink" onclick="closeAll();openMessages()">← 一覧へ</button>
+    <h2 class="mincho" style="font-size:20px">${name}</h2>
+    <div class="chatbox"><div class="msgs" id="msgs"></div>
+      <div class="composer"><input id="msgInput" placeholder="メッセージを入力" maxlength="2000">
+      <button class="solid" id="sendBtn">送信</button></div></div>`;
+  document.getElementById('chatScrim').classList.add('on');
+  document.getElementById('sendBtn').onclick=doSend;
+  document.getElementById('msgInput').addEventListener('keydown',e=>{if(e.key==='Enter')doSend();});
+  await pollMessages(true);
+  chatState.timer=setInterval(()=>pollMessages(false),3000);
+}
+async function pollMessages(scroll){
+  if(!chatState.matchId)return;
+  try{
+    const {items,me:uid}=await api(`/messages?match_id=${chatState.matchId}&after=${chatState.after}`);
+    const box=document.getElementById('msgs'); if(!box)return;
+    for(const m of items){
+      chatState.after=Math.max(chatState.after,m.created_at);
+      const d=document.createElement('div'); d.className='b '+(m.from_id===uid?'me':'you');
+      d.textContent=m.body; box.appendChild(d);
+    }
+    if(items.length||scroll) box.scrollTop=box.scrollHeight;
+  }catch(e){/* ignore transient */}
+}
+async function doSend(){
+  const input=document.getElementById('msgInput'); const text=input.value.trim();
+  if(!text)return; input.value='';
+  try{
+    const m=await jpost('/messages',{match_id:chatState.matchId,body:text});
+    chatState.after=Math.max(chatState.after,m.created_at);
+    const box=document.getElementById('msgs');
+    const d=document.createElement('div'); d.className='b me'; d.textContent=m.body; box.appendChild(d);
+    box.scrollTop=box.scrollHeight;
+  }catch(e){
+    if(e.status===402){ closeAll(); openUpgrade(); }
+    else toast(e.message);
+  }
+}
+function openUpgrade(){
+  document.getElementById('pModal').innerHTML=`<h2 class="mincho">スタンダードプランのご案内</h2>
+    <p style="color:var(--muted);margin:12px 0">メッセージの送信はスタンダードプラン以上でご利用いただけます。</p>
+    <button class="solid full" onclick="startCheckout('standard')">スタンダードにアップグレード</button>
+    <button class="ghost full" style="margin-top:8px" onclick="startCheckout('premium')">プレミアムにアップグレード</button>
+    <div class="note">決済はStripeの安全な画面で行われます。</div>`;
+  document.getElementById('pScrim').classList.add('on');
+}
+async function startCheckout(plan){
+  try{const {url}=await jpost('/checkout',{plan});location.href=url;}
+  catch(e){toast(e.message||'決済の準備に失敗しました（Stripe設定が必要です）');}
+}
+
+/* ---- photo / verify uploads ---- */
+function pickPhoto(){toggleMenu(false);document.getElementById('photoInput').click();}
+function pickVerify(){toggleMenu(false);document.getElementById('verifyInput').click();}
+document.getElementById('photoInput').onchange=async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f)return;
+  if(f.size>5*1024*1024){toast('5MBまでにしてください');return;}
+  toast('アップロード中…');
+  try{await api('/upload',{method:'POST',headers:{'Content-Type':f.type},body:f});
+    await loadMe();await loadProfiles();toast('写真を更新しました');}
+  catch(err){toast(err.message);}
+};
+document.getElementById('verifyInput').onchange=async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f)return;
+  if(f.size>8*1024*1024){toast('8MBまでにしてください');return;}
+  toast('送信中…');
+  try{await api('/verify',{method:'POST',headers:{'Content-Type':f.type},body:f});
+    toast('本人確認を申請しました（審査中）');}
+  catch(err){toast(err.message);}
+};
+
+/* ---- auth ---- */
 function openAuth(mode){
   const isSignup=mode==='signup';
   document.getElementById('authTitle').textContent=isSignup?'はじめる':'ログイン';
   document.getElementById('authSubmit').textContent=isSignup?'登録する':'ログイン';
   document.getElementById('authErr').textContent='';
-  document.getElementById('authFields').innerHTML = isSignup ? `
+  document.getElementById('authFields').innerHTML=isSignup?`
     <div class="field"><label>ニックネーム</label><input id="aName" placeholder="あおい"></div>
     <div class="row2">
       <div class="field"><label>性別</label><select id="aGender"><option value="female">女性</option><option value="male">男性</option><option value="other">その他</option></select></div>
-      <div class="field"><label>年齢</label><input id="aAge" type="number" min="18" placeholder="34"></div>
-    </div>
+      <div class="field"><label>年齢</label><input id="aAge" type="number" min="18" placeholder="34"></div></div>
     <div class="field"><label>エリア</label><select id="aArea">${AREAS.map(a=>`<option>${a}</option>`).join('')}</select></div>
     <div class="field"><label>メールアドレス</label><input id="aEmail" type="email"></div>
-    <div class="field"><label>パスワード</label><input id="aPass" type="password"></div>`
-  : `
+    <div class="field"><label>パスワード</label><input id="aPass" type="password"></div>`:`
     <div class="field"><label>メールアドレス</label><input id="aEmail" type="email"></div>
     <div class="field"><label>パスワード</label><input id="aPass" type="password"></div>`;
-  document.getElementById('authSwitch').innerHTML = isSignup
-    ? 'アカウントをお持ちですか？ <a onclick="openAuth(\'login\')">ログイン</a>'
-    : 'はじめての方は <a onclick="openAuth(\'signup\')">アカウント作成</a>';
+  document.getElementById('authSwitch').innerHTML=isSignup?'アカウントをお持ちですか？ <a onclick="openAuth(\'login\')">ログイン</a>':'はじめての方は <a onclick="openAuth(\'signup\')">アカウント作成</a>';
   document.getElementById('authSubmit').onclick=()=>submitAuth(isSignup);
   document.getElementById('authScrim').classList.add('on');
 }
@@ -220,17 +307,24 @@ async function submitAuth(isSignup){
   const err=document.getElementById('authErr'); err.textContent='';
   const body={email:v('aEmail'),password:v('aPass')};
   if(isSignup)Object.assign(body,{display_name:v('aName'),gender:v('aGender'),age:v('aAge'),area:v('aArea')});
-  try{
-    await api(isSignup?'/signup':'/login',{method:'POST',body:JSON.stringify(body)});
-    closeAll(); await loadMe(); await loadProfiles(); toast('ようこそ');
-  }catch(e){ err.textContent=e.message; }
+  try{await jpost(isSignup?'/signup':'/login',body);closeAll();await loadMe();await loadProfiles();toast('ようこそ');}
+  catch(e){err.textContent=e.message;}
 }
 const v=id=>document.getElementById(id).value.trim();
+async function doLogout(){toggleMenu(false);try{await jpost('/logout',{});}catch{} me=null;renderAuthState();loadProfiles();toast('ログアウトしました');}
 
-function closeAll(){document.querySelectorAll('.scrim').forEach(s=>s.classList.remove('on'));}
+function closeAll(){
+  document.querySelectorAll('.scrim').forEach(s=>s.classList.remove('on'));
+  if(chatState.timer){clearInterval(chatState.timer);chatState.timer=null;}
+}
 document.querySelectorAll('.scrim').forEach(s=>s.onclick=e=>{if(e.target===s)closeAll();});
+function toggleMenu(on){document.getElementById('acctMenu').classList.toggle('on',on);}
 document.getElementById('loginBtn').onclick=()=>openAuth('login');
-document.getElementById('signupBtn').onclick=()=>me?location.reload():openAuth('signup');
+document.getElementById('msgBtn').onclick=openMessages;
+document.getElementById('signupBtn').onclick=()=>{ if(me) toggleMenu(!document.getElementById('acctMenu').classList.contains('on')); else openAuth('signup'); };
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#acctMenu')&&e.target.id!=='signupBtn') toggleMenu(false);
+});
 
 loadMe(); loadProfiles();
 </script>
