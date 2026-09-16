@@ -38,6 +38,10 @@ async function route(request, env, url) {
   if (p === '/api/conversations'  && m === 'GET') return conversations(request, env);
   if (p === '/api/unread'         && m === 'GET') return unread(request, env);
   if (p === '/api/read'           && m === 'POST') return markRead(request, env);
+  if (p === '/api/profile'         && m === 'GET')  return profileOne(request, env, url);
+  if (p === '/api/unmatch'         && m === 'POST') return unmatch(request, env);
+  if (p === '/api/report'          && m === 'POST') return report(request, env);
+  if (p === '/api/messages/delete' && m === 'POST') return messagesDelete(request, env);
 
   // messaging
   if (p === '/api/messages' && m === 'GET')  return listMessages(request, env, url);
@@ -275,6 +279,55 @@ async function markRead(request, env) {
   return json({ ok: true });
 }
 
+async function profileOne(request, env, url) {
+  await auth(request, env);
+  const id = url.searchParams.get('user_id');
+  if (!id) return json({ error: 'invalid' }, 400);
+  const p = await env.DB.prepare(
+    'SELECT user_id,display_name,gender,age,area,tagline,photo_key,verified FROM profiles WHERE user_id=?')
+    .bind(id).first();
+  if (!p) return json({ error: 'not found' }, 404);
+  return json(p);
+}
+
+async function unmatch(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { match_id } = await request.json();
+  const row = match_id ? await matchMember(env, match_id, uid) : null;
+  if (!row) return json({ error: 'not found' }, 404);
+  const other = row.a_id === uid ? row.b_id : row.a_id;
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM messages WHERE match_id=?').bind(match_id),
+    env.DB.prepare('DELETE FROM reads WHERE match_id=?').bind(match_id),
+    env.DB.prepare('DELETE FROM matches WHERE id=?').bind(match_id),
+    env.DB.prepare('DELETE FROM likes WHERE (from_id=? AND to_id=?) OR (from_id=? AND to_id=?)')
+      .bind(uid, other, other, uid),
+  ]);
+  return json({ ok: true });
+}
+
+async function report(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { target_id, reason } = await request.json();
+  if (!target_id) return json({ error: 'invalid' }, 400);
+  await env.DB.prepare('INSERT INTO reports (id,reporter_id,target_id,reason,created_at) VALUES (?,?,?,?,?)')
+    .bind(uuid(), uid, target_id, (reason || '').slice(0, 1000), Date.now()).run();
+  return json({ ok: true });
+}
+
+async function messagesDelete(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { ids } = await request.json();
+  if (!Array.isArray(ids) || !ids.length) return json({ error: 'invalid' }, 400);
+  const clean = ids.slice(0, 200);
+  const ph = clean.map(() => '?').join(',');
+  await env.DB.prepare(`DELETE FROM messages WHERE from_id=? AND id IN (${ph})`).bind(uid, ...clean).run();
+  return json({ ok: true, deleted: clean.length });
+}
+
 // ---------- messaging ----------
 async function matchMember(env, matchId, uid) {
   const row = await env.DB.prepare('SELECT a_id,b_id FROM matches WHERE id=?').bind(matchId).first();
@@ -287,13 +340,17 @@ async function listMessages(request, env, url) {
   const uid = await auth(request, env);
   if (!uid) return json({ error: 'unauthorized' }, 401);
   const matchId = url.searchParams.get('match_id');
-  if (!matchId || !(await matchMember(env, matchId, uid))) return json({ error: 'not found' }, 404);
+  const row = matchId ? await matchMember(env, matchId, uid) : null;
+  if (!row) return json({ error: 'not found' }, 404);
   const after = Number(url.searchParams.get('after') || 0);
   const rows = await env.DB.prepare(
     `SELECT id,from_id,body,created_at FROM messages
      WHERE match_id=? AND created_at>? ORDER BY created_at ASC LIMIT 200`)
     .bind(matchId, after).all();
-  return json({ items: rows.results, me: uid });
+  const partner = row.a_id === uid ? row.b_id : row.a_id;
+  const rd = await env.DB.prepare('SELECT last_read_at FROM reads WHERE user_id=? AND match_id=?')
+    .bind(partner, matchId).first();
+  return json({ items: rows.results, me: uid, read_at: rd?.last_read_at || 0 });
 }
 
 async function sendMessage(request, env) {

@@ -112,6 +112,25 @@
   .composer{display:flex;gap:8px;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--surface);max-width:760px;width:100%;margin:0 auto}
   .composer input{flex:1;padding:12px 16px;border:1px solid var(--line);border-radius:999px;font-family:inherit;font-size:15px}
   .planbar{background:#F7EFED;color:#6a5d64;text-align:center;padding:10px;font-size:13px;cursor:pointer}
+  @keyframes bubbleIn{from{opacity:0;transform:translateY(9px) scale(.97)}to{opacity:1;transform:none}}
+  .bwrap.enter .b{animation:bubbleIn .22s cubic-bezier(.22,1,.36,1)}
+  .receipt{font-size:10px;color:var(--muted);margin:2px 6px 0}
+  .iconbtn{background:transparent;color:var(--anchor);font-size:24px;padding:2px 10px;line-height:1}
+  #view-chat.selecting .bwrap.me{cursor:pointer}
+  #view-chat.selecting .bwrap.me.sel .b{outline:2px solid var(--accent);outline-offset:2px}
+  .selbar{display:flex;gap:10px;align-items:center;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--surface)}
+  .selbar .cnt{flex:1;color:var(--muted);font-size:13px}
+  .cmenu-scrim{position:fixed;inset:0;background:rgba(44,36,48,.35);z-index:60;display:none}
+  .cmenu-scrim.on{display:block}
+  .cmenu{position:absolute;top:60px;right:14px;width:240px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 50px rgba(44,36,48,.25);overflow:hidden}
+  .cmenu button{display:block;width:100%;text-align:center;background:#fff;color:var(--ink);padding:15px;border-radius:0;border-bottom:1px solid var(--line);font-size:15px}
+  .cmenu button:last-child{border-bottom:none}
+  .cmenu button.danger{color:#c0392b}
+  .cmenu button:hover{background:#f7efed}
+  @media (max-width:640px){
+    .cmenu{top:auto;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));width:auto;border-radius:16px}
+    .cmenu button{padding:17px;font-size:16px}
+  }
   .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--anchor);color:#fff;padding:12px 22px;border-radius:999px;font-size:14px;opacity:0;transition:.3s;z-index:80;pointer-events:none;max-width:90vw}
   .toast.on{opacity:1}
 </style>
@@ -162,9 +181,17 @@
     <button class="back" onclick="goMessages()">←</button>
     <div class="cav" id="chatAvatar"></div>
     <h2 id="chatName"></h2>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="chatMenuBtn" title="メニュー">⋯</button>
   </div>
   <div class="msgs" id="msgs"></div>
   <div id="composerHolder"></div>
+  <div class="selbar" id="selBar" style="display:none">
+    <span class="cnt" id="selCnt">0件選択中</span>
+    <button class="ghost" style="border:1px solid var(--line)" onclick="exitSelect()">キャンセル</button>
+    <button class="solid" onclick="deleteSelected()">削除</button>
+  </div>
+  <div class="cmenu-scrim" id="chatMenuScrim"><div class="cmenu" id="chatMenu"></div></div>
 </section>
 
 <!-- モーダル群 -->
@@ -282,15 +309,16 @@ async function likeBack(to){
 }
 
 /* ---- ページ遷移（ハッシュルーター）---- */
-function router(){
+async function router(){
   const h=location.hash;
-  const home=document.getElementById('view-home');
   const vm=document.getElementById('view-messages'), vc=document.getElementById('view-chat');
   vm.classList.remove('on'); vc.classList.remove('on');
-  stopChatPoll();
+  stopChatPoll(); exitSelect(); closeChatMenu();
   if(h.startsWith('#chat=')){
     if(!me){location.hash='';return;}
-    showChat(h.slice(6));
+    const mid=h.slice(6);
+    if(!convMap[mid]) await loadConversations();
+    showChat(mid);
   }else if(h==='#msg'){
     if(!me){location.hash='';openAuth('login');return;}
     vm.classList.add('on'); loadConversations();
@@ -311,7 +339,7 @@ function setConvTab(t){
 let convItems=[];
 async function loadConversations(){
   try{ const {items}=await api('/conversations'); convItems=items;
-    convMap={}; items.forEach(c=>convMap[c.match_id]={name:c.display_name,photo_key:c.photo_key});
+    convMap={}; items.forEach(c=>convMap[c.match_id]={name:c.display_name,photo_key:c.photo_key,user_id:c.user_id});
     const mcount=items.filter(c=>!c.last_at).length;
     const mb=document.getElementById('matchTabBadge');
     if(mcount){mb.textContent=mcount;mb.style.display='';}else mb.style.display='none';
@@ -339,12 +367,15 @@ function renderConversations(){
 /* ---- トークルーム ---- */
 function showChat(matchId){
   const info=convMap[matchId];
-  chatState={matchId,after:0,timer:null};
+  chatState={matchId,after:0,timer:null,partnerId:info?info.user_id:null};
   document.getElementById('chatName').textContent=info?info.name:'';
   const av=document.getElementById('chatAvatar');
   av.style.background=info?grad(info.name):'';
   av.innerHTML=info?avatarHTML({display_name:info.name,photo_key:info.photo_key}):'';
   document.getElementById('msgs').innerHTML='';
+  document.getElementById('selBar').style.display='none';
+  document.getElementById('composerHolder').style.display='';
+  buildChatMenu();
   const canSend=me&&(me.plan==='standard'||me.plan==='premium');
   document.getElementById('composerHolder').innerHTML=canSend?`
     <div class="composer"><input id="msgInput" placeholder="メッセージを入力" maxlength="2000"><button class="solid" id="sendBtn">送信</button></div>`:`
@@ -359,21 +390,32 @@ function showChat(matchId){
   jpost('/read',{match_id:matchId}).then(()=>pollUnread()).catch(()=>{});
 }
 function stopChatPoll(){ if(chatState.timer){clearInterval(chatState.timer);chatState.timer=null;} chatState.matchId=null; }
-async function pollMessages(scroll){
+function appendBubble(m,mine,animate){
+  const box=document.getElementById('msgs');
+  const w=document.createElement('div'); w.className='bwrap '+(mine?'me':'you')+(animate?' enter':'');
+  w.dataset.id=m.id; w.dataset.ts=m.created_at; w.dataset.me=mine?'1':'0';
+  const b=document.createElement('div'); b.className='b '+(mine?'me':'you'); b.textContent=m.body;
+  const t=document.createElement('div'); t.className='btime'; t.textContent=fmtTime(m.created_at);
+  w.appendChild(b); w.appendChild(t); box.appendChild(w);
+  return w;
+}
+function updateReceipts(readAt){
+  const box=document.getElementById('msgs'); if(!box)return;
+  box.querySelectorAll('.receipt').forEach(r=>r.remove());
+  const mine=[...box.querySelectorAll('.bwrap.me')].filter(w=>Number(w.dataset.ts)<=readAt);
+  if(mine.length){ const r=document.createElement('div'); r.className='receipt'; r.textContent='既読'; mine[mine.length-1].appendChild(r); }
+}
+async function pollMessages(initial){
   if(!chatState.matchId)return;
   try{
-    const {items,me:uid}=await api(`/messages?match_id=${chatState.matchId}&after=${chatState.after}`);
+    const data=await api(`/messages?match_id=${chatState.matchId}&after=${chatState.after}`);
+    const uid=data.me;
     const box=document.getElementById('msgs'); if(!box||!document.getElementById('view-chat').classList.contains('on'))return;
     let added=false;
-    for(const m of items){
-      chatState.after=Math.max(chatState.after,m.created_at);
-      const w=document.createElement('div'); w.className='bwrap '+(m.from_id===uid?'me':'you');
-      const b=document.createElement('div'); b.className='b '+(m.from_id===uid?'me':'you'); b.textContent=m.body;
-      const t=document.createElement('div'); t.className='btime'; t.textContent=fmtTime(m.created_at);
-      w.appendChild(b); w.appendChild(t); box.appendChild(w); added=true;
-    }
+    for(const m of data.items){ chatState.after=Math.max(chatState.after,m.created_at); appendBubble(m,m.from_id===uid,!initial); added=true; }
+    updateReceipts(data.read_at||0);
     if(added){ box.scrollTop=box.scrollHeight; jpost('/read',{match_id:chatState.matchId}).then(()=>pollUnread()).catch(()=>{}); }
-    else if(scroll) box.scrollTop=box.scrollHeight;
+    else if(initial) box.scrollTop=box.scrollHeight;
   }catch(e){}
 }
 async function doSend(){
@@ -382,12 +424,35 @@ async function doSend(){
   try{
     const m=await jpost('/messages',{match_id:chatState.matchId,body:text});
     chatState.after=Math.max(chatState.after,m.created_at);
-    const box=document.getElementById('msgs');
-    const w=document.createElement('div'); w.className='bwrap me';
-    const b=document.createElement('div'); b.className='b me'; b.textContent=m.body;
-    const t=document.createElement('div'); t.className='btime'; t.textContent=fmtTime(m.created_at);
-    w.appendChild(b); w.appendChild(t); box.appendChild(w); box.scrollTop=box.scrollHeight;
+    appendBubble(m,true,true);
+    const box=document.getElementById('msgs'); box.scrollTop=box.scrollHeight;
   }catch(e){ if(e.status===402){openUpgrade();} else toast(e.message); }
+}
+/* ---- トークの ⋯ メニュー ---- */
+function buildChatMenu(){
+  document.getElementById('chatMenu').innerHTML=`
+    <button onclick="viewPartnerProfile()">プロフィールを見る</button>
+    <button class="danger" onclick="doUnmatch()">マッチングを解除する</button>
+    <button class="danger" onclick="doReport()">通報する</button>
+    <button class="danger" onclick="enterSelect()">トークを選択して削除する</button>
+    <button onclick="closeChatMenu()">キャンセル</button>`;
+}
+function openChatMenu(){ document.getElementById('chatMenuScrim').classList.add('on'); }
+function closeChatMenu(){ const s=document.getElementById('chatMenuScrim'); if(s)s.classList.remove('on'); }
+async function viewPartnerProfile(){ closeChatMenu(); if(!chatState.partnerId)return; try{const p=await api('/profile?user_id='+encodeURIComponent(chatState.partnerId));openProfile(p);}catch(e){toast(e.message);} }
+async function doUnmatch(){ closeChatMenu(); if(!confirm('マッチングを解除しますか？トーク履歴も削除されます。'))return; try{await jpost('/unmatch',{match_id:chatState.matchId});toast('マッチングを解除しました');await pollUnread();goMessages();}catch(e){toast(e.message);} }
+async function doReport(){ closeChatMenu(); const reason=prompt('通報の理由（任意）'); if(reason===null)return; try{await jpost('/report',{target_id:chatState.partnerId,reason});toast('通報しました。ご協力ありがとうございます');}catch(e){toast(e.message);} }
+/* ---- トーク選択削除 ---- */
+let selecting=false;
+function enterSelect(){ closeChatMenu(); selecting=true; document.getElementById('view-chat').classList.add('selecting'); document.getElementById('composerHolder').style.display='none'; document.getElementById('selBar').style.display='flex'; updateSelCnt(); }
+function exitSelect(){ selecting=false; const vc=document.getElementById('view-chat'); if(!vc)return; vc.classList.remove('selecting'); document.querySelectorAll('#msgs .bwrap.sel').forEach(w=>w.classList.remove('sel')); const c=document.getElementById('composerHolder'); if(c)c.style.display=''; const s=document.getElementById('selBar'); if(s)s.style.display='none'; }
+function updateSelCnt(){ document.getElementById('selCnt').textContent=document.querySelectorAll('#msgs .bwrap.sel').length+'件選択中'; }
+async function deleteSelected(){
+  const sel=[...document.querySelectorAll('#msgs .bwrap.sel')]; const ids=sel.map(w=>w.dataset.id);
+  if(!ids.length){exitSelect();return;}
+  try{ await jpost('/messages/delete',{ids}); sel.forEach(w=>w.remove()); toast('削除しました'); }
+  catch(e){ toast(e.message); }
+  exitSelect();
 }
 function openUpgrade(){
   document.getElementById('pModal').innerHTML=`<h2 class="mincho">スタンダードプランのご案内</h2>
@@ -495,6 +560,9 @@ function toggleMenu(on){document.getElementById('acctMenu').classList.toggle('on
 document.getElementById('loginBtn').onclick=()=>openAuth('login');
 document.getElementById('msgBtn').onclick=navMessages;
 document.getElementById('likesBtn').onclick=openLikes;
+document.getElementById('chatMenuBtn').onclick=openChatMenu;
+document.getElementById('chatMenuScrim').onclick=e=>{ if(e.target.id==='chatMenuScrim') closeChatMenu(); };
+document.getElementById('msgs').addEventListener('click',e=>{ if(!selecting)return; const w=e.target.closest('.bwrap.me'); if(!w)return; w.classList.toggle('sel'); updateSelCnt(); });
 document.getElementById('signupBtn').onclick=()=>{ if(me) toggleMenu(!document.getElementById('acctMenu').classList.contains('on')); else openAuth('signup'); };
 document.addEventListener('click',e=>{ if(!e.target.closest('#acctMenu')&&e.target.id!=='signupBtn') toggleMenu(false); });
 
