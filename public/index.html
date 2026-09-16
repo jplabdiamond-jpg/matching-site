@@ -21,7 +21,15 @@
   .brand{font-family:"Shippori Mincho",serif;font-weight:600;font-size:22px;letter-spacing:.14em;color:var(--anchor)}
   .brand small{display:block;font-family:"Noto Sans JP";font-weight:400;font-size:10px;letter-spacing:.24em;color:var(--muted);margin-top:2px}
   .spacer{flex:1}
-  body:not(.ready) #loginBtn, body:not(.ready) #signupBtn, body:not(.ready) #msgBtn{visibility:hidden}
+  body:not(.ready) #loginBtn, body:not(.ready) #signupBtn, body:not(.ready) #msgBtn, body:not(.ready) #likesBtn{visibility:hidden}
+  .hbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;vertical-align:middle}
+  .lcard{display:flex;gap:12px;padding:10px;border:1px solid var(--line);border-radius:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .lcard .lav{width:70px;height:88px;border-radius:10px;overflow:hidden;position:relative;flex:none;display:grid;place-items:center}
+  .lcard .lav .ini{font-family:"Shippori Mincho",serif;font-size:30px;color:#fff}
+  .lcard .lav img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+  .lcard .lbody{flex:1;min-width:0}
+  .lcard .lbody .tag{font-family:"Shippori Mincho",serif;font-size:12.5px;color:#6a5d64;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:2px 0 8px}
+  .lcard .lbody button{padding:8px 16px;font-size:13px}
   .gbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font-size:15px;font-weight:500}
   .gbtn:hover{background:#faf5f4}
   .gbtn svg{width:18px;height:18px}
@@ -92,6 +100,7 @@
   <div class="bar">
     <div class="brand">ソワレ<small>SOIRÉE MATCHING</small></div>
     <div class="spacer"></div>
+    <button class="ghost" id="likesBtn" style="display:none">相手からのいいね<span class="hbadge" id="likesBadge" style="display:none">0</span></button>
     <button class="ghost" id="msgBtn" style="display:none">メッセージ</button>
     <button class="ghost" id="loginBtn">ログイン</button>
     <button class="solid" id="signupBtn">はじめる</button>
@@ -130,6 +139,7 @@
 
 <div class="scrim" id="pScrim"><div class="modal" id="pModal"></div></div>
 <div class="scrim" id="listScrim"><div class="modal" id="listModal"></div></div>
+<div class="scrim" id="likesScrim"><div class="modal" id="likesModal"></div></div>
 <div class="scrim" id="chatScrim"><div class="modal" id="chatModal"></div></div>
 <div class="scrim" id="onboardScrim"><div class="modal" id="onboardModal"></div></div>
 
@@ -163,8 +173,10 @@ async function loadMe(){ try{me=await api('/me');}catch{me=null;} renderAuthStat
 function renderAuthState(){
   document.getElementById('loginBtn').style.display=me?'none':'';
   document.getElementById('msgBtn').style.display=me?'':'none';
+  document.getElementById('likesBtn').style.display=me?'':'none';
   document.getElementById('signupBtn').textContent=me?`${me.display_name||'アカウント'} さん`:'はじめる';
   document.body.classList.add('ready');
+  if(me) refreshLikeBadge();
 }
 
 async function loadProfiles(){
@@ -201,8 +213,45 @@ function openProfile(it){
 }
 async function sendLike(to){
   if(!me){closeAll();openAuth('signup');return;}
-  try{const r=await jpost('/like',{to_id:to});closeAll();toast(r.matched?'マッチしました！メッセージから話しかけられます':'いいねを送りました');}
+  try{const r=await jpost('/like',{to_id:to});closeAll();toast(r.matched?'マッチしました！メッセージから話しかけられます':'いいねを送りました');refreshLikeBadge();}
   catch(e){toast(e.message);}
+}
+
+/* ---- 相手からのいいね ---- */
+async function refreshLikeBadge(){
+  try{
+    const {items}=await api('/likes/received');
+    const b=document.getElementById('likesBadge');
+    if(items.length){ b.textContent=items.length; b.style.display=''; }
+    else b.style.display='none';
+  }catch{}
+}
+let likesItems=[];
+async function openLikes(){
+  if(!me){openAuth('login');return;}
+  const {items}=await api('/likes/received');
+  likesItems=items;
+  const list=items.length?items.map((it,i)=>`
+    <div class="lcard">
+      <div class="lav" style="background:${grad(it.display_name)}" onclick="openProfile(likesItems[${i}])">${avatarHTML(it)}</div>
+      <div class="lbody">
+        <div class="name"><b>${esc(it.display_name)}</b> ${it.age}</div>
+        <div class="meta">${gLabel[it.gender]||''}・${esc(it.area)} ${it.verified?'・<span style="color:var(--safe)">本人確認済み</span>':''}</div>
+        <div class="tag">${esc(it.tagline)}</div>
+        <button class="solid" onclick="likeBack('${it.user_id}')">いいねを返す</button>
+      </div>
+    </div>`).join(''):'<p style="color:var(--muted)">まだ「いいね」は届いていません。</p>';
+  document.getElementById('likesModal').innerHTML=`<h2 class="mincho">相手からのいいね</h2>
+    <p class="note" style="margin:4px 0 14px">あなたに「いいね」をくれた方です（新しい順）。返すとマッチになります。</p>${list}`;
+  document.getElementById('likesScrim').classList.add('on');
+}
+async function likeBack(to){
+  try{
+    const r=await jpost('/like',{to_id:to});
+    toast(r.matched?'マッチしました！メッセージから話しかけられます':'いいねを返しました');
+    await refreshLikeBadge();
+    await openLikes();
+  }catch(e){toast(e.message);}
 }
 
 /* ---- messages ---- */
@@ -333,6 +382,7 @@ document.querySelectorAll('.scrim').forEach(s=>s.onclick=e=>{if(e.target===s&&s.
 function toggleMenu(on){document.getElementById('acctMenu').classList.toggle('on',on);}
 document.getElementById('loginBtn').onclick=()=>openAuth('login');
 document.getElementById('msgBtn').onclick=openMessages;
+document.getElementById('likesBtn').onclick=openLikes;
 document.getElementById('signupBtn').onclick=()=>{ if(me) toggleMenu(!document.getElementById('acctMenu').classList.contains('on')); else openAuth('signup'); };
 document.addEventListener('click',e=>{
   if(!e.target.closest('#acctMenu')&&e.target.id!=='signupBtn') toggleMenu(false);

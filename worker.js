@@ -34,6 +34,7 @@ async function route(request, env, url) {
   if (p === '/api/profiles' && m === 'GET')  return listProfiles(request, env, url);
   if (p === '/api/like'     && m === 'POST') return like(request, env);
   if (p === '/api/matches'  && m === 'GET')  return listMatches(request, env);
+  if (p === '/api/likes/received' && m === 'GET') return likesReceived(request, env);
 
   // messaging
   if (p === '/api/messages' && m === 'GET')  return listMessages(request, env, url);
@@ -212,6 +213,18 @@ async function listMatches(request, env) {
     `SELECT m.id, p.user_id, p.display_name, p.age, p.area, p.photo_key, p.verified
      FROM matches m JOIN profiles p ON p.user_id = CASE WHEN m.a_id=? THEN m.b_id ELSE m.a_id END
      WHERE m.a_id=? OR m.b_id=? ORDER BY m.created_at DESC`).bind(uid, uid, uid).all();
+  return json({ items: rows.results });
+}
+
+async function likesReceived(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const rows = await env.DB.prepare(
+    `SELECT p.user_id,p.display_name,p.gender,p.age,p.area,p.tagline,p.photo_key,p.verified,l.created_at
+     FROM likes l JOIN profiles p ON p.user_id = l.from_id
+     WHERE l.to_id = ?
+       AND NOT EXISTS (SELECT 1 FROM likes l2 WHERE l2.from_id = ? AND l2.to_id = l.from_id)
+     ORDER BY l.created_at DESC LIMIT 100`).bind(uid, uid).all();
   return json({ items: rows.results });
 }
 
