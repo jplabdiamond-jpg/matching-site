@@ -352,7 +352,7 @@ function showChat(matchId){
   document.getElementById('view-chat').classList.add('on');
   if(canSend){
     document.getElementById('sendBtn').onclick=doSend;
-    document.getElementById('msgInput').addEventListener('keydown',e=>{if(e.key==='Enter')doSend();});
+    document.getElementById('msgInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229){e.preventDefault();doSend();}});
   }
   pollMessages(true);
   chatState.timer=setInterval(()=>pollMessages(false),3000);
