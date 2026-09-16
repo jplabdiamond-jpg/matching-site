@@ -35,6 +35,9 @@ async function route(request, env, url) {
   if (p === '/api/like'     && m === 'POST') return like(request, env);
   if (p === '/api/matches'  && m === 'GET')  return listMatches(request, env);
   if (p === '/api/likes/received' && m === 'GET') return likesReceived(request, env);
+  if (p === '/api/conversations'  && m === 'GET') return conversations(request, env);
+  if (p === '/api/unread'         && m === 'GET') return unread(request, env);
+  if (p === '/api/read'           && m === 'POST') return markRead(request, env);
 
   // messaging
   if (p === '/api/messages' && m === 'GET')  return listMessages(request, env, url);
@@ -226,6 +229,50 @@ async function likesReceived(request, env) {
        AND NOT EXISTS (SELECT 1 FROM likes l2 WHERE l2.from_id = ? AND l2.to_id = l.from_id)
      ORDER BY l.created_at DESC LIMIT 100`).bind(uid, uid).all();
   return json({ items: rows.results });
+}
+
+async function conversations(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const rows = await env.DB.prepare(
+    `SELECT m.id AS match_id, m.created_at AS matched_at,
+       p.user_id, p.display_name, p.age, p.area, p.photo_key, p.verified,
+       (SELECT body FROM messages x WHERE x.match_id=m.id ORDER BY x.created_at DESC LIMIT 1) AS last_body,
+       (SELECT created_at FROM messages x WHERE x.match_id=m.id ORDER BY x.created_at DESC LIMIT 1) AS last_at,
+       (SELECT COUNT(*) FROM messages x WHERE x.match_id=m.id AND x.from_id<>?
+          AND x.created_at > COALESCE((SELECT last_read_at FROM reads r WHERE r.user_id=? AND r.match_id=m.id),0)) AS unread
+     FROM matches m
+     JOIN profiles p ON p.user_id = CASE WHEN m.a_id=? THEN m.b_id ELSE m.a_id END
+     WHERE m.a_id=? OR m.b_id=?
+     ORDER BY COALESCE(last_at, m.created_at) DESC`).bind(uid, uid, uid, uid, uid).all();
+  return json({ items: rows.results });
+}
+
+async function unread(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ messages: 0, likes: 0 });
+  const mres = await env.DB.prepare(
+    `SELECT COUNT(*) AS c FROM messages x JOIN matches m ON m.id=x.match_id
+     WHERE (m.a_id=? OR m.b_id=?) AND x.from_id<>?
+       AND x.created_at > COALESCE((SELECT last_read_at FROM reads r WHERE r.user_id=? AND r.match_id=x.match_id),0)`)
+    .bind(uid, uid, uid, uid).first();
+  const lres = await env.DB.prepare(
+    `SELECT COUNT(*) AS c FROM likes l
+     WHERE l.to_id=? AND NOT EXISTS (SELECT 1 FROM likes l2 WHERE l2.from_id=? AND l2.to_id=l.from_id)`)
+    .bind(uid, uid).first();
+  return json({ messages: mres.c || 0, likes: lres.c || 0 });
+}
+
+async function markRead(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { match_id } = await request.json();
+  if (!match_id || !(await matchMember(env, match_id, uid))) return json({ error: 'not found' }, 404);
+  await env.DB.prepare(
+    `INSERT INTO reads (user_id,match_id,last_read_at) VALUES (?,?,?)
+     ON CONFLICT(user_id,match_id) DO UPDATE SET last_read_at=excluded.last_read_at`)
+    .bind(uid, match_id, Date.now()).run();
+  return json({ ok: true });
 }
 
 // ---------- messaging ----------

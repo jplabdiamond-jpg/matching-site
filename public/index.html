@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>ソワレ — 同じ立場で出会うマッチング</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,29 +17,17 @@
   body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans JP",sans-serif;-webkit-font-smoothing:antialiased;line-height:1.7}
   .mincho{font-family:"Shippori Mincho",serif}
   header{position:sticky;top:0;z-index:20;background:rgba(251,246,244,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-  .bar{max-width:1080px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:12px}
+  .bar{max-width:1080px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:10px}
   .brand{font-family:"Shippori Mincho",serif;font-weight:600;font-size:22px;letter-spacing:.14em;color:var(--anchor)}
   .brand small{display:block;font-family:"Noto Sans JP";font-weight:400;font-size:10px;letter-spacing:.24em;color:var(--muted);margin-top:2px}
   .spacer{flex:1}
-  body:not(.ready) #loginBtn, body:not(.ready) #signupBtn, body:not(.ready) #msgBtn, body:not(.ready) #likesBtn{visibility:hidden}
-  .hbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;vertical-align:middle}
-  .lcard{display:flex;gap:12px;padding:10px;border:1px solid var(--line);border-radius:14px;margin-bottom:10px;box-shadow:var(--shadow)}
-  .lcard .lav{width:70px;height:88px;border-radius:10px;overflow:hidden;position:relative;flex:none;display:grid;place-items:center}
-  .lcard .lav .ini{font-family:"Shippori Mincho",serif;font-size:30px;color:#fff}
-  .lcard .lav img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
-  .lcard .lbody{flex:1;min-width:0}
-  .lcard .lbody .tag{font-family:"Shippori Mincho",serif;font-size:12.5px;color:#6a5d64;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:2px 0 8px}
-  .lcard .lbody button{padding:8px 16px;font-size:13px}
-  .gbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font-size:15px;font-weight:500}
-  .gbtn:hover{background:#faf5f4}
-  .gbtn svg{width:18px;height:18px}
-  .divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;margin:16px 0}
-  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
   button{font-family:inherit;cursor:pointer;border:none;border-radius:999px;font-size:14px}
-  .ghost{background:transparent;color:var(--anchor);padding:9px 16px}
+  .ghost{background:transparent;color:var(--anchor);padding:9px 14px;position:relative}
   .ghost:hover{background:#F3E9E7}
   .solid{background:var(--anchor);color:#fff;padding:9px 20px}
   .solid:hover{background:#4a2138}
+  body:not(.ready) #loginBtn, body:not(.ready) #signupBtn, body:not(.ready) #msgBtn, body:not(.ready) #likesBtn{visibility:hidden}
+  .hbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:5px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;vertical-align:middle}
   .lead{max-width:1080px;margin:0 auto;padding:40px 20px 8px}
   .lead h1{font-family:"Shippori Mincho",serif;font-weight:500;font-size:clamp(26px,4.4vw,40px);line-height:1.5;margin:0 0 12px;color:var(--anchor)}
   .lead p{max-width:34em;color:var(--muted);margin:0}
@@ -56,6 +44,7 @@
   .name{font-weight:500;font-size:16px}.name b{font-weight:700}
   .meta{color:var(--muted);font-size:13px;margin:2px 0 8px}
   .tag{font-family:"Shippori Mincho",serif;font-size:13.5px;color:#6a5d64;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
+  /* modals */
   .scrim{position:fixed;inset:0;background:rgba(44,36,48,.5);backdrop-filter:blur(2px);display:none;place-items:center;z-index:40;padding:20px}
   .scrim.on{display:grid}
   .modal{background:var(--surface);border-radius:20px;max-width:440px;width:100%;padding:26px;box-shadow:0 20px 60px rgba(44,36,48,.25);max-height:86vh;overflow:auto}
@@ -72,27 +61,59 @@
   .switch{text-align:center;margin-top:14px;font-size:13px;color:var(--muted)}
   .switch a{color:var(--accent);cursor:pointer;text-decoration:underline}
   .note{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6}
-  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--anchor);color:#fff;padding:12px 22px;border-radius:999px;font-size:14px;opacity:0;transition:.3s;z-index:60;pointer-events:none}
-  .toast.on{opacity:1}
-  .menu{position:absolute;top:56px;right:20px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:6px;z-index:30;display:none;min-width:190px}
+  .gbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font-size:15px;font-weight:500}
+  .gbtn:hover{background:#faf5f4}
+  .divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;margin:16px 0}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+  .menu{position:absolute;top:56px;right:20px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:6px;z-index:30;display:none;min-width:200px}
   .menu.on{display:block}
   .menu button{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);padding:10px 14px;border-radius:10px;font-size:14px}
   .menu button:hover{background:#F3E9E7}
-  /* match list */
-  .mrow{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;cursor:pointer}
-  .mrow:hover{background:#F7EFED}
-  .mrow .av{width:46px;height:46px;border-radius:50%;overflow:hidden;position:relative;flex:none;display:grid;place-items:center}
-  .mrow .av .ini{font-family:"Shippori Mincho",serif;color:#fff;font-size:20px}
-  .mrow .av img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+  /* likes cards */
+  .lcard{display:flex;gap:12px;padding:10px;border:1px solid var(--line);border-radius:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .lcard .lav{width:70px;height:88px;border-radius:10px;overflow:hidden;position:relative;flex:none;display:grid;place-items:center}
+  .lcard .lav .ini{font-family:"Shippori Mincho",serif;font-size:30px;color:#fff}
+  .lcard .lav img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+  .lcard .lbody{flex:1;min-width:0}
+  .lcard .lbody .tag{font-family:"Shippori Mincho",serif;font-size:12.5px;color:#6a5d64;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:2px 0 8px}
+  .lcard .lbody button{padding:8px 16px;font-size:13px}
+  /* full-screen pages */
+  .page{position:fixed;inset:0;background:var(--bg);z-index:45;display:none;flex-direction:column}
+  .page.on{display:flex}
+  .pbar{display:flex;align-items:center;gap:10px;padding:14px 16px;padding-top:max(14px,env(safe-area-inset-top));border-bottom:1px solid var(--line);background:var(--surface)}
+  .pbar .back{font-size:22px;color:var(--anchor);background:transparent;padding:2px 8px;line-height:1}
+  .pbar h2{font-family:"Shippori Mincho",serif;font-weight:500;font-size:19px;color:var(--anchor);margin:0}
+  .tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--line)}
+  .tabs button{flex:1;background:transparent;color:var(--muted);padding:12px;border-radius:0;font-size:14px;font-weight:500;border-bottom:2px solid transparent}
+  .tabs button.active{color:var(--anchor);border-bottom-color:var(--anchor)}
+  .tabs .tbadge{min-width:16px;height:16px;padding:0 4px;font-size:10px;background:var(--accent);color:#fff;border-radius:999px;display:inline-grid;place-items:center;margin-left:4px;vertical-align:middle}
+  .convlist{flex:1;overflow:auto;padding:6px 0}
+  .crow{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer}
+  .crow:hover{background:#F7EFED}
+  .cav{width:54px;height:54px;border-radius:50%;overflow:hidden;position:relative;flex:none;display:grid;place-items:center}
+  .cav .ini{font-family:"Shippori Mincho",serif;color:#fff;font-size:22px}
+  .cav img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+  .cbody{flex:1;min-width:0}
+  .ctop{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+  .cname{font-weight:500}
+  .ctime{font-size:11px;color:var(--muted);flex:none}
+  .cprev{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .cunread{min-width:20px;height:20px;padding:0 6px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;border-radius:999px;display:grid;place-items:center;flex:none}
+  .empty{color:var(--muted);text-align:center;padding:60px 24px;font-size:14px;line-height:1.9}
   /* chat */
-  .chatbox{display:flex;flex-direction:column;height:64vh}
-  .msgs{flex:1;overflow:auto;padding:6px 2px;display:flex;flex-direction:column;gap:8px}
-  .b{max-width:78%;padding:9px 13px;border-radius:16px;font-size:14px;line-height:1.5;word-break:break-word}
+  #view-chat .pbar .cav{width:38px;height:38px}
+  .msgs{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:8px;max-width:760px;width:100%;margin:0 auto}
+  .b{max-width:76%;padding:10px 14px;border-radius:18px;font-size:14.5px;line-height:1.55;word-break:break-word;white-space:pre-wrap}
   .b.me{align-self:flex-end;background:var(--anchor);color:#fff;border-bottom-right-radius:5px}
   .b.you{align-self:flex-start;background:#F1E7E4;color:var(--ink);border-bottom-left-radius:5px}
-  .composer{display:flex;gap:8px;margin-top:10px}
-  .composer input{flex:1;padding:11px 14px;border:1px solid var(--line);border-radius:999px;font-family:inherit;font-size:15px}
-  .backlink{background:transparent;color:var(--muted);padding:0;margin-bottom:8px;font-size:13px}
+  .bwrap{display:flex;flex-direction:column;max-width:100%}
+  .bwrap.me{align-items:flex-end}.bwrap.you{align-items:flex-start}
+  .btime{font-size:10px;color:var(--muted);margin:2px 6px 0}
+  .composer{display:flex;gap:8px;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--surface);max-width:760px;width:100%;margin:0 auto}
+  .composer input{flex:1;padding:12px 16px;border:1px solid var(--line);border-radius:999px;font-family:inherit;font-size:15px}
+  .planbar{background:#F7EFED;color:#6a5d64;text-align:center;padding:10px;font-size:13px;cursor:pointer}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--anchor);color:#fff;padding:12px 22px;border-radius:999px;font-size:14px;opacity:0;transition:.3s;z-index:80;pointer-events:none;max-width:90vw}
+  .toast.on{opacity:1}
 </style>
 </head>
 <body>
@@ -101,7 +122,7 @@
     <div class="brand">ソワレ<small>SOIRÉE MATCHING</small></div>
     <div class="spacer"></div>
     <button class="ghost" id="likesBtn" style="display:none">相手からのいいね<span class="hbadge" id="likesBadge" style="display:none">0</span></button>
-    <button class="ghost" id="msgBtn" style="display:none">メッセージ</button>
+    <button class="ghost" id="msgBtn" style="display:none">メッセージ<span class="hbadge" id="msgBadge" style="display:none">0</span></button>
     <button class="ghost" id="loginBtn">ログイン</button>
     <button class="solid" id="signupBtn">はじめる</button>
   </div>
@@ -112,23 +133,44 @@
   <button onclick="doLogout()">ログアウト</button>
 </div>
 
-<section class="lead">
-  <h1>同じ立場だからこそ、<br>肩の力を抜いて話せる。</h1>
-  <p>安心してつながることを大切にした、大人のためのマッチング。まずは気になる人を探してみてください。</p>
+<main id="view-home">
+  <section class="lead">
+    <h1>同じ立場だからこそ、<br>肩の力を抜いて話せる。</h1>
+    <p>安心してつながることを大切にした、大人のためのマッチング。まずは気になる人を探してみてください。</p>
+  </section>
+  <div class="filters">
+    <select id="fGender"><option value="">性別すべて</option><option value="female">女性</option><option value="male">男性</option><option value="other">その他</option></select>
+    <select id="fArea"><option value="">エリアすべて</option><option>東京都</option><option>神奈川県</option><option>大阪府</option><option>愛知県</option><option>福岡県</option><option>北海道</option></select>
+    <select id="fAge"><option value="">年齢すべて</option><option value="20,29">20代</option><option value="30,39">30代</option><option value="40,49">40代</option><option value="50,120">50代以上</option></select>
+  </div>
+  <div class="grid" id="grid"></div>
+</main>
+
+<!-- メッセージ一覧ページ -->
+<section class="page" id="view-messages">
+  <div class="pbar"><button class="back" onclick="goHome()">←</button><h2>メッセージ</h2></div>
+  <div class="tabs">
+    <button id="tabTalk" class="active" onclick="setConvTab('talk')">トーク中</button>
+    <button id="tabMatch" onclick="setConvTab('match')">マッチ中<span class="tbadge" id="matchTabBadge" style="display:none">0</span></button>
+  </div>
+  <div class="convlist" id="convlist"></div>
 </section>
 
-<div class="filters">
-  <select id="fGender"><option value="">性別すべて</option><option value="female">女性</option><option value="male">男性</option><option value="other">その他</option></select>
-  <select id="fArea"><option value="">エリアすべて</option><option>東京都</option><option>神奈川県</option><option>大阪府</option><option>愛知県</option><option>福岡県</option><option>北海道</option></select>
-  <select id="fAge"><option value="">年齢すべて</option><option value="20,29">20代</option><option value="30,39">30代</option><option value="40,49">40代</option><option value="50,120">50代以上</option></select>
-</div>
-<div class="grid" id="grid"></div>
+<!-- トークページ -->
+<section class="page" id="view-chat">
+  <div class="pbar">
+    <button class="back" onclick="goMessages()">←</button>
+    <div class="cav" id="chatAvatar"></div>
+    <h2 id="chatName"></h2>
+  </div>
+  <div class="msgs" id="msgs"></div>
+  <div id="composerHolder"></div>
+</section>
 
+<!-- モーダル群 -->
 <div class="scrim" id="authScrim"><div class="modal">
   <h2 id="authTitle" class="mincho">はじめる</h2>
-  <button class="gbtn" id="googleBtn" style="margin-top:14px" onclick="location.href='/api/auth/google'">
-    Googleで続ける
-  </button>
+  <button class="gbtn" id="googleBtn" style="margin-top:14px" onclick="location.href='/api/auth/google'">Googleで続ける</button>
   <div class="divider">または</div>
   <div id="authFields"></div>
   <div class="err" id="authErr"></div>
@@ -136,11 +178,8 @@
   <div class="switch" id="authSwitch"></div>
   <div class="note">18歳以上の方のみご利用いただけます。登録により利用規約に同意したものとみなします。</div>
 </div></div>
-
 <div class="scrim" id="pScrim"><div class="modal" id="pModal"></div></div>
-<div class="scrim" id="listScrim"><div class="modal" id="listModal"></div></div>
 <div class="scrim" id="likesScrim"><div class="modal" id="likesModal"></div></div>
-<div class="scrim" id="chatScrim"><div class="modal" id="chatModal"></div></div>
 <div class="scrim" id="onboardScrim"><div class="modal" id="onboardModal"></div></div>
 
 <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" style="display:none">
@@ -154,7 +193,7 @@ const grad=s=>GRAD[[...String(s)].reduce((a,c)=>a+c.charCodeAt(0),0)%GRAD.length
 const gLabel={female:'女性',male:'男性',other:'その他'};
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const photoURL=k=>'/api/photo?key='+encodeURIComponent(k);
-let me=null;
+let me=null, convMap={}, convTab='talk', chatState={matchId:null,after:0,timer:null}, unreadState={messages:0,likes:0}, unreadTimer=null;
 
 async function api(path,opts={}){
   const r=await fetch('/api'+path,{credentials:'same-origin',...opts});
@@ -163,10 +202,13 @@ async function api(path,opts={}){
   return d;
 }
 const jpost=(p,b)=>api(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
-function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2400);}
-function avatarHTML(o,cls){ // o has display_name + photo_key
-  if(o.photo_key) return `<img src="${photoURL(o.photo_key)}" alt="">`;
-  return `<span class="ini">${esc(String(o.display_name)[0]||'?')}</span>`;
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2600);}
+function avatarHTML(o){ return o.photo_key?`<img src="${photoURL(o.photo_key)}" alt="">`:`<span class="ini">${esc(String(o.display_name)[0]||'?')}</span>`; }
+function fmtTime(ts){
+  if(!ts)return'';
+  const d=new Date(ts),now=new Date();
+  const sameDay=d.toDateString()===now.toDateString();
+  return sameDay?d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}):`${d.getMonth()+1}/${d.getDate()}`;
 }
 
 async function loadMe(){ try{me=await api('/me');}catch{me=null;} renderAuthState(); }
@@ -176,9 +218,10 @@ function renderAuthState(){
   document.getElementById('likesBtn').style.display=me?'':'none';
   document.getElementById('signupBtn').textContent=me?`${me.display_name||'アカウント'} さん`:'はじめる';
   document.body.classList.add('ready');
-  if(me) refreshLikeBadge();
+  if(me){ startUnreadPoll(); } else { stopUnreadPoll(); }
 }
 
+/* ---- explorer ---- */
 async function loadProfiles(){
   const g=document.getElementById('fGender').value,a=document.getElementById('fArea').value;
   const [min,max]=(document.getElementById('fAge').value||'').split(',');
@@ -189,9 +232,7 @@ async function loadProfiles(){
   grid.innerHTML=items.length?'':'<p style="color:var(--muted)">条件に合う方が見つかりませんでした。</p>';
   for(const it of items){
     const el=document.createElement('div'); el.className='card';
-    el.innerHTML=`<div class="ava" style="background:${grad(it.display_name)}">
-        ${it.verified?'<div class="badge">本人確認済み</div>':''}${avatarHTML(it)}
-      </div>
+    el.innerHTML=`<div class="ava" style="background:${grad(it.display_name)}">${it.verified?'<div class="badge">本人確認済み</div>':''}${avatarHTML(it)}</div>
       <div class="info"><div class="name"><b>${esc(it.display_name)}</b> ${it.age}</div>
         <div class="meta">${gLabel[it.gender]||''}・${esc(it.area)}</div>
         <div class="tag">${esc(it.tagline)}</div></div>`;
@@ -212,25 +253,16 @@ function openProfile(it){
   document.getElementById('likeBtn').onclick=()=>sendLike(it.user_id);
 }
 async function sendLike(to){
-  if(!me){closeAll();openAuth('signup');return;}
-  try{const r=await jpost('/like',{to_id:to});closeAll();toast(r.matched?'マッチしました！メッセージから話しかけられます':'いいねを送りました');refreshLikeBadge();}
+  if(!me){closeModals();openAuth('signup');return;}
+  try{const r=await jpost('/like',{to_id:to});closeModals();toast(r.matched?'マッチしました！メッセージから話しかけられます':'いいねを送りました');pollUnread();}
   catch(e){toast(e.message);}
 }
 
 /* ---- 相手からのいいね ---- */
-async function refreshLikeBadge(){
-  try{
-    const {items}=await api('/likes/received');
-    const b=document.getElementById('likesBadge');
-    if(items.length){ b.textContent=items.length; b.style.display=''; }
-    else b.style.display='none';
-  }catch{}
-}
 let likesItems=[];
 async function openLikes(){
   if(!me){openAuth('login');return;}
-  const {items}=await api('/likes/received');
-  likesItems=items;
+  const {items}=await api('/likes/received'); likesItems=items;
   const list=items.length?items.map((it,i)=>`
     <div class="lcard">
       <div class="lav" style="background:${grad(it.display_name)}" onclick="openProfile(likesItems[${i}])">${avatarHTML(it)}</div>
@@ -239,83 +271,129 @@ async function openLikes(){
         <div class="meta">${gLabel[it.gender]||''}・${esc(it.area)} ${it.verified?'・<span style="color:var(--safe)">本人確認済み</span>':''}</div>
         <div class="tag">${esc(it.tagline)}</div>
         <button class="solid" onclick="likeBack('${it.user_id}')">いいねを返す</button>
-      </div>
-    </div>`).join(''):'<p style="color:var(--muted)">まだ「いいね」は届いていません。</p>';
+      </div></div>`).join(''):'<p style="color:var(--muted)">まだ「いいね」は届いていません。</p>';
   document.getElementById('likesModal').innerHTML=`<h2 class="mincho">相手からのいいね</h2>
     <p class="note" style="margin:4px 0 14px">あなたに「いいね」をくれた方です（新しい順）。返すとマッチになります。</p>${list}`;
   document.getElementById('likesScrim').classList.add('on');
 }
 async function likeBack(to){
-  try{
-    const r=await jpost('/like',{to_id:to});
-    toast(r.matched?'マッチしました！メッセージから話しかけられます':'いいねを返しました');
-    await refreshLikeBadge();
-    await openLikes();
-  }catch(e){toast(e.message);}
+  try{const r=await jpost('/like',{to_id:to});toast(r.matched?'マッチしました！メッセージから話しかけられます':'いいねを返しました');await pollUnread();await openLikes();}
+  catch(e){toast(e.message);}
 }
 
-/* ---- messages ---- */
-async function openMessages(){
-  if(!me){openAuth('login');return;}
-  const {items}=await api('/matches');
-  const list=items.length?items.map(m=>`
-    <div class="mrow" onclick="openChat('${m.id}','${esc(m.display_name)}')">
-      <div class="av" style="background:${grad(m.display_name)}">${avatarHTML(m)}</div>
-      <div><div style="font-weight:500">${esc(m.display_name)} ${m.age}</div>
-      <div class="meta" style="margin:0">${esc(m.area)}</div></div>
-    </div>`).join(''):'<p style="color:var(--muted)">まだマッチした相手がいません。気になる人に「いいね」を送ってみましょう。</p>';
-  document.getElementById('listModal').innerHTML=`<h2 class="mincho">メッセージ</h2><div style="margin-top:10px">${list}</div>`;
-  document.getElementById('listScrim').classList.add('on');
+/* ---- ページ遷移（ハッシュルーター）---- */
+function router(){
+  const h=location.hash;
+  const home=document.getElementById('view-home');
+  const vm=document.getElementById('view-messages'), vc=document.getElementById('view-chat');
+  vm.classList.remove('on'); vc.classList.remove('on');
+  stopChatPoll();
+  if(h.startsWith('#chat=')){
+    if(!me){location.hash='';return;}
+    showChat(h.slice(6));
+  }else if(h==='#msg'){
+    if(!me){location.hash='';openAuth('login');return;}
+    vm.classList.add('on'); loadConversations();
+  }
+}
+window.addEventListener('hashchange',router);
+function goHome(){ location.hash=''; }
+function goMessages(){ location.hash='#msg'; }
+function navMessages(){ if(!me){openAuth('login');return;} location.hash='#msg'; }
+
+/* ---- 会話一覧 ---- */
+function setConvTab(t){
+  convTab=t;
+  document.getElementById('tabTalk').classList.toggle('active',t==='talk');
+  document.getElementById('tabMatch').classList.toggle('active',t==='match');
+  renderConversations();
+}
+let convItems=[];
+async function loadConversations(){
+  try{ const {items}=await api('/conversations'); convItems=items;
+    convMap={}; items.forEach(c=>convMap[c.match_id]={name:c.display_name,photo_key:c.photo_key});
+    const mcount=items.filter(c=>!c.last_at).length;
+    const mb=document.getElementById('matchTabBadge');
+    if(mcount){mb.textContent=mcount;mb.style.display='';}else mb.style.display='none';
+    renderConversations();
+  }catch(e){ document.getElementById('convlist').innerHTML=`<p class="empty">${esc(e.message)}</p>`; }
+}
+function renderConversations(){
+  const box=document.getElementById('convlist');
+  const list=convItems.filter(c=>convTab==='talk'?c.last_at:!c.last_at);
+  if(!list.length){
+    box.innerHTML=`<p class="empty">${convTab==='talk'?'まだトーク中の相手はいません。<br>マッチした相手にメッセージを送ってみましょう。':'メッセージ前のマッチはありません。'}</p>`;
+    return;
+  }
+  box.innerHTML=list.map(c=>`
+    <div class="crow" onclick="location.hash='#chat=${c.match_id}'">
+      <div class="cav" style="background:${grad(c.display_name)}">${avatarHTML(c)}</div>
+      <div class="cbody">
+        <div class="ctop"><span class="cname">${esc(c.display_name)} ${c.age}</span><span class="ctime">${fmtTime(c.last_at)}</span></div>
+        <div class="cprev">${c.last_body?esc(c.last_body):'<span style="color:var(--accent)">マッチしました！メッセージを送ってみましょう</span>'}</div>
+      </div>
+      ${c.unread>0?`<span class="cunread">${c.unread}</span>`:''}
+    </div>`).join('');
 }
 
-let chatState={matchId:null,after:0,timer:null};
-async function openChat(matchId,name){
-  closeAll();
+/* ---- トークルーム ---- */
+function showChat(matchId){
+  const info=convMap[matchId];
   chatState={matchId,after:0,timer:null};
-  document.getElementById('chatModal').innerHTML=`
-    <button class="backlink" onclick="closeAll();openMessages()">← 一覧へ</button>
-    <h2 class="mincho" style="font-size:20px">${name}</h2>
-    <div class="chatbox"><div class="msgs" id="msgs"></div>
-      <div class="composer"><input id="msgInput" placeholder="メッセージを入力" maxlength="2000">
-      <button class="solid" id="sendBtn">送信</button></div></div>`;
-  document.getElementById('chatScrim').classList.add('on');
-  document.getElementById('sendBtn').onclick=doSend;
-  document.getElementById('msgInput').addEventListener('keydown',e=>{if(e.key==='Enter')doSend();});
-  await pollMessages(true);
+  document.getElementById('chatName').textContent=info?info.name:'';
+  const av=document.getElementById('chatAvatar');
+  av.style.background=info?grad(info.name):'';
+  av.innerHTML=info?avatarHTML({display_name:info.name,photo_key:info.photo_key}):'';
+  document.getElementById('msgs').innerHTML='';
+  const canSend=me&&(me.plan==='standard'||me.plan==='premium');
+  document.getElementById('composerHolder').innerHTML=canSend?`
+    <div class="composer"><input id="msgInput" placeholder="メッセージを入力" maxlength="2000"><button class="solid" id="sendBtn">送信</button></div>`:`
+    <div class="planbar" onclick="openUpgrade()">メッセージの送信はスタンダードプラン以上でご利用いただけます（タップして詳細）</div>`;
+  document.getElementById('view-chat').classList.add('on');
+  if(canSend){
+    document.getElementById('sendBtn').onclick=doSend;
+    document.getElementById('msgInput').addEventListener('keydown',e=>{if(e.key==='Enter')doSend();});
+  }
+  pollMessages(true);
   chatState.timer=setInterval(()=>pollMessages(false),3000);
+  jpost('/read',{match_id:matchId}).then(()=>pollUnread()).catch(()=>{});
 }
+function stopChatPoll(){ if(chatState.timer){clearInterval(chatState.timer);chatState.timer=null;} chatState.matchId=null; }
 async function pollMessages(scroll){
   if(!chatState.matchId)return;
   try{
     const {items,me:uid}=await api(`/messages?match_id=${chatState.matchId}&after=${chatState.after}`);
-    const box=document.getElementById('msgs'); if(!box)return;
+    const box=document.getElementById('msgs'); if(!box||!document.getElementById('view-chat').classList.contains('on'))return;
+    let added=false;
     for(const m of items){
       chatState.after=Math.max(chatState.after,m.created_at);
-      const d=document.createElement('div'); d.className='b '+(m.from_id===uid?'me':'you');
-      d.textContent=m.body; box.appendChild(d);
+      const w=document.createElement('div'); w.className='bwrap '+(m.from_id===uid?'me':'you');
+      const b=document.createElement('div'); b.className='b '+(m.from_id===uid?'me':'you'); b.textContent=m.body;
+      const t=document.createElement('div'); t.className='btime'; t.textContent=fmtTime(m.created_at);
+      w.appendChild(b); w.appendChild(t); box.appendChild(w); added=true;
     }
-    if(items.length||scroll) box.scrollTop=box.scrollHeight;
-  }catch(e){/* ignore transient */}
+    if(added){ box.scrollTop=box.scrollHeight; jpost('/read',{match_id:chatState.matchId}).then(()=>pollUnread()).catch(()=>{}); }
+    else if(scroll) box.scrollTop=box.scrollHeight;
+  }catch(e){}
 }
 async function doSend(){
-  const input=document.getElementById('msgInput'); const text=input.value.trim();
-  if(!text)return; input.value='';
+  const input=document.getElementById('msgInput'); if(!input)return;
+  const text=input.value.trim(); if(!text)return; input.value='';
   try{
     const m=await jpost('/messages',{match_id:chatState.matchId,body:text});
     chatState.after=Math.max(chatState.after,m.created_at);
     const box=document.getElementById('msgs');
-    const d=document.createElement('div'); d.className='b me'; d.textContent=m.body; box.appendChild(d);
-    box.scrollTop=box.scrollHeight;
-  }catch(e){
-    if(e.status===402){ closeAll(); openUpgrade(); }
-    else toast(e.message);
-  }
+    const w=document.createElement('div'); w.className='bwrap me';
+    const b=document.createElement('div'); b.className='b me'; b.textContent=m.body;
+    const t=document.createElement('div'); t.className='btime'; t.textContent=fmtTime(m.created_at);
+    w.appendChild(b); w.appendChild(t); box.appendChild(w); box.scrollTop=box.scrollHeight;
+  }catch(e){ if(e.status===402){openUpgrade();} else toast(e.message); }
 }
 function openUpgrade(){
   document.getElementById('pModal').innerHTML=`<h2 class="mincho">スタンダードプランのご案内</h2>
     <p style="color:var(--muted);margin:12px 0">メッセージの送信はスタンダードプラン以上でご利用いただけます。</p>
     <button class="solid full" onclick="startCheckout('standard')">スタンダードにアップグレード</button>
-    <button class="ghost full" style="margin-top:8px" onclick="startCheckout('premium')">プレミアムにアップグレード</button>
+    <button class="ghost full" style="margin-top:8px;border:1px solid var(--line)" onclick="startCheckout('premium')">プレミアムにアップグレード</button>
     <div class="note">決済はStripeの安全な画面で行われます。</div>`;
   document.getElementById('pScrim').classList.add('on');
 }
@@ -324,27 +402,63 @@ async function startCheckout(plan){
   catch(e){toast(e.message||'決済の準備に失敗しました（Stripe設定が必要です）');}
 }
 
-/* ---- photo / verify uploads ---- */
+/* ---- 未読ポーリング（バッジ＋アプリ内通知）---- */
+async function pollUnread(){
+  if(!me)return;
+  try{
+    const u=await api('/unread');
+    if(u.messages>unreadState.messages && !document.getElementById('view-chat').classList.contains('on')) toast('新しいメッセージが届きました');
+    if(u.likes>unreadState.likes) toast('新しい「いいね」が届きました');
+    unreadState=u;
+    setBadge('msgBadge',u.messages); setBadge('likesBadge',u.likes);
+    if(document.getElementById('view-messages').classList.contains('on')) loadConversations();
+  }catch(e){}
+}
+function setBadge(id,n){ const b=document.getElementById(id); if(n>0){b.textContent=n>99?'99+':n;b.style.display='';}else b.style.display='none'; }
+function startUnreadPoll(){ pollUnread(); if(!unreadTimer) unreadTimer=setInterval(pollUnread,15000); }
+function stopUnreadPoll(){ if(unreadTimer){clearInterval(unreadTimer);unreadTimer=null;} setBadge('msgBadge',0); setBadge('likesBadge',0); }
+function refreshLikeBadge(){ pollUnread(); }
+
+/* ---- 写真 / 本人確認 ---- */
 function pickPhoto(){toggleMenu(false);document.getElementById('photoInput').click();}
 function pickVerify(){toggleMenu(false);document.getElementById('verifyInput').click();}
 document.getElementById('photoInput').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if(!f)return;
   if(f.size>5*1024*1024){toast('5MBまでにしてください');return;}
   toast('アップロード中…');
-  try{await api('/upload',{method:'POST',headers:{'Content-Type':f.type},body:f});
-    await loadMe();await loadProfiles();toast('写真を更新しました');}
+  try{await api('/upload',{method:'POST',headers:{'Content-Type':f.type},body:f});await loadMe();await loadProfiles();toast('写真を更新しました');}
   catch(err){toast(err.message);}
 };
 document.getElementById('verifyInput').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if(!f)return;
   if(f.size>8*1024*1024){toast('8MBまでにしてください');return;}
   toast('送信中…');
-  try{await api('/verify',{method:'POST',headers:{'Content-Type':f.type},body:f});
-    toast('本人確認を申請しました（審査中）');}
+  try{await api('/verify',{method:'POST',headers:{'Content-Type':f.type},body:f});toast('本人確認を申請しました（審査中）');}
   catch(err){toast(err.message);}
 };
 
-/* ---- auth ---- */
+/* ---- オンボーディング ---- */
+function openOnboard(){
+  document.getElementById('onboardModal').innerHTML=`
+    <h2 class="mincho">プロフィールを作成</h2>
+    <p class="note" style="margin:6px 0 4px">はじめまして。表示されるプロフィールを設定してください。</p>
+    <div class="field"><label>ニックネーム</label><input id="oName" placeholder="あおい"></div>
+    <div class="row2">
+      <div class="field"><label>性別</label><select id="oGender"><option value="female">女性</option><option value="male">男性</option><option value="other">その他</option></select></div>
+      <div class="field"><label>年齢</label><input id="oAge" type="number" min="18" placeholder="34"></div></div>
+    <div class="field"><label>エリア</label><select id="oArea">${AREAS.map(a=>`<option>${a}</option>`).join('')}</select></div>
+    <div class="err" id="oErr"></div>
+    <button class="solid full" onclick="submitOnboard()">はじめる</button>`;
+  document.getElementById('onboardScrim').classList.add('on');
+}
+async function submitOnboard(){
+  const err=document.getElementById('oErr'); err.textContent='';
+  try{ await jpost('/onboard',{display_name:v('oName'),gender:v('oGender'),age:v('oAge'),area:v('oArea')});
+    document.getElementById('onboardScrim').classList.remove('on'); await loadMe(); await loadProfiles(); toast('ようこそ');
+  }catch(e){ err.textContent=e.message; }
+}
+
+/* ---- 認証 ---- */
 function openAuth(mode){
   const isSignup=mode==='signup';
   document.getElementById('authTitle').textContent=isSignup?'はじめる':'ログイン';
@@ -368,48 +482,21 @@ async function submitAuth(isSignup){
   const err=document.getElementById('authErr'); err.textContent='';
   const body={email:v('aEmail'),password:v('aPass')};
   if(isSignup)Object.assign(body,{display_name:v('aName'),gender:v('aGender'),age:v('aAge'),area:v('aArea')});
-  try{await jpost(isSignup?'/signup':'/login',body);closeAll();await loadMe();await loadProfiles();toast('ようこそ');}
+  try{await jpost(isSignup?'/signup':'/login',body);closeModals();await loadMe();await loadProfiles();toast('ようこそ');}
   catch(e){err.textContent=e.message;}
 }
 const v=id=>document.getElementById(id).value.trim();
-async function doLogout(){toggleMenu(false);try{await jpost('/logout',{});}catch{} me=null;renderAuthState();loadProfiles();toast('ログアウトしました');}
+async function doLogout(){toggleMenu(false);try{await jpost('/logout',{});}catch{} me=null;renderAuthState();goHome();loadProfiles();toast('ログアウトしました');}
 
-function closeAll(){
-  document.querySelectorAll('.scrim').forEach(s=>s.classList.remove('on'));
-  if(chatState.timer){clearInterval(chatState.timer);chatState.timer=null;}
-}
-document.querySelectorAll('.scrim').forEach(s=>s.onclick=e=>{if(e.target===s&&s.id!=='onboardScrim')closeAll();});
+/* ---- 共通 ---- */
+function closeModals(){ document.querySelectorAll('.scrim').forEach(s=>{ if(s.id!=='onboardScrim') s.classList.remove('on'); }); }
+document.querySelectorAll('.scrim').forEach(s=>s.onclick=e=>{if(e.target===s&&s.id!=='onboardScrim')s.classList.remove('on');});
 function toggleMenu(on){document.getElementById('acctMenu').classList.toggle('on',on);}
 document.getElementById('loginBtn').onclick=()=>openAuth('login');
-document.getElementById('msgBtn').onclick=openMessages;
+document.getElementById('msgBtn').onclick=navMessages;
 document.getElementById('likesBtn').onclick=openLikes;
 document.getElementById('signupBtn').onclick=()=>{ if(me) toggleMenu(!document.getElementById('acctMenu').classList.contains('on')); else openAuth('signup'); };
-document.addEventListener('click',e=>{
-  if(!e.target.closest('#acctMenu')&&e.target.id!=='signupBtn') toggleMenu(false);
-});
-
-/* ---- onboarding (Googleで初回登録した人のプロフィール作成) ---- */
-function openOnboard(){
-  document.getElementById('onboardModal').innerHTML=`
-    <h2 class="mincho">プロフィールを作成</h2>
-    <p class="note" style="margin:6px 0 4px">はじめまして。表示されるプロフィールを設定してください。</p>
-    <div class="field"><label>ニックネーム</label><input id="oName" placeholder="あおい"></div>
-    <div class="row2">
-      <div class="field"><label>性別</label><select id="oGender"><option value="female">女性</option><option value="male">男性</option><option value="other">その他</option></select></div>
-      <div class="field"><label>年齢</label><input id="oAge" type="number" min="18" placeholder="34"></div></div>
-    <div class="field"><label>エリア</label><select id="oArea">${AREAS.map(a=>`<option>${a}</option>`).join('')}</select></div>
-    <div class="err" id="oErr"></div>
-    <button class="solid full" onclick="submitOnboard()">はじめる</button>`;
-  document.getElementById('onboardScrim').classList.add('on');
-}
-async function submitOnboard(){
-  const err=document.getElementById('oErr'); err.textContent='';
-  try{
-    await jpost('/onboard',{display_name:v('oName'),gender:v('oGender'),age:v('oAge'),area:v('oArea')});
-    document.getElementById('onboardScrim').classList.remove('on');
-    await loadMe(); await loadProfiles(); toast('ようこそ');
-  }catch(e){ err.textContent=e.message; }
-}
+document.addEventListener('click',e=>{ if(!e.target.closest('#acctMenu')&&e.target.id!=='signupBtn') toggleMenu(false); });
 
 (async()=>{
   await loadMe(); loadProfiles();
@@ -417,7 +504,8 @@ async function submitOnboard(){
   const sp=new URLSearchParams(location.search);
   if(sp.get('auth_error')) toast('ログインに失敗しました。もう一度お試しください');
   if(sp.get('upgraded')) toast('アップグレードありがとうございます');
-  if(location.search) history.replaceState({},'',location.pathname);
+  if(location.search) history.replaceState({},'',location.pathname+location.hash);
+  router();
 })();
 </script>
 </body>
