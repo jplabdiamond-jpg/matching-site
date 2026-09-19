@@ -10,18 +10,18 @@ const PLANS = {
 };
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
     try {
-      return await route(request, env, url);
+      return await route(request, env, url, ctx);
     } catch (err) {
       return json({ error: String(err && err.message || err) }, 500);
     }
   },
 };
 
-async function route(request, env, url) {
+async function route(request, env, url, ctx) {
   const p = url.pathname, m = request.method;
 
   if (p === '/api/signup'   && m === 'POST') return signup(request, env);
@@ -32,7 +32,7 @@ async function route(request, env, url) {
   if (p === '/api/auth/google/callback' && m === 'GET') return googleCallback(request, env);
   if (p === '/api/onboard'  && m === 'POST') return onboard(request, env);
   if (p === '/api/profiles' && m === 'GET')  return listProfiles(request, env, url);
-  if (p === '/api/like'     && m === 'POST') return like(request, env);
+  if (p === '/api/like'     && m === 'POST') return like(request, env, ctx);
   if (p === '/api/matches'  && m === 'GET')  return listMatches(request, env);
   if (p === '/api/likes/received' && m === 'GET') return likesReceived(request, env);
   if (p === '/api/footprints'     && m === 'GET') return footprints(request, env);
@@ -60,10 +60,13 @@ async function route(request, env, url) {
   if (p === '/api/gallery/status'  && m === 'GET')  return galleryStatus(request, env, url);
   if (p === '/api/gallery/view'    && m === 'GET')  return galleryView(request, env, url);
   if (p === '/api/gallery/photo'   && m === 'GET')  return galleryPhoto(request, env, url);
+  if (p === '/api/vapid'           && m === 'GET')  return json({ publicKey: env.VAPID_PUBLIC_KEY || '' });
+  if (p === '/api/push/subscribe'  && m === 'POST') return pushSubscribe(request, env);
+  if (p === '/api/push/unsubscribe'&& m === 'POST') return pushUnsubscribe(request, env);
 
   // messaging
   if (p === '/api/messages' && m === 'GET')  return listMessages(request, env, url);
-  if (p === '/api/messages' && m === 'POST') return sendMessage(request, env);
+  if (p === '/api/messages' && m === 'POST') return sendMessage(request, env, ctx);
 
   // photos (R2)
   if (p === '/api/upload'   && m === 'POST') return uploadPhoto(request, env);
@@ -234,14 +237,16 @@ async function listProfiles(request, env, url) {
 }
 
 // ---------- likes / matches ----------
-async function like(request, env) {
+async function like(request, env, ctx) {
   const uid = await auth(request, env);
   if (!uid) return json({ error: 'unauthorized' }, 401);
   const { to_id } = await request.json();
   if (!to_id || to_id === uid) return json({ error: 'invalid target' }, 400);
   const now = Date.now();
+  const existed = await env.DB.prepare('SELECT 1 FROM likes WHERE from_id=? AND to_id=?').bind(uid, to_id).first();
   await env.DB.prepare('INSERT OR IGNORE INTO likes (from_id,to_id,created_at) VALUES (?,?,?)')
     .bind(uid, to_id, now).run();
+  if (!existed) notifyUser(env, ctx, to_id);
   const back = await env.DB.prepare('SELECT 1 FROM likes WHERE from_id=? AND to_id=?').bind(to_id, uid).first();
   if (back) {
     const [a, b] = [uid, to_id].sort();
@@ -574,6 +579,67 @@ async function galleryPhoto(request, env, url) {
   return new Response(obj.body, { headers: h });
 }
 
+// ---------- push notifications (Web Push, payloadless + VAPID) ----------
+async function pushSubscribe(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { endpoint, keys } = await request.json();
+  if (!endpoint) return json({ error: 'invalid' }, 400);
+  await env.DB.prepare(
+    `INSERT INTO push_subs (endpoint,user_id,p256dh,auth,created_at) VALUES (?,?,?,?,?)
+     ON CONFLICT(endpoint) DO UPDATE SET user_id=excluded.user_id,p256dh=excluded.p256dh,auth=excluded.auth`)
+    .bind(endpoint, uid, keys?.p256dh || '', keys?.auth || '', Date.now()).run();
+  return json({ ok: true });
+}
+
+async function pushUnsubscribe(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { endpoint } = await request.json();
+  if (endpoint) await env.DB.prepare('DELETE FROM push_subs WHERE endpoint=? AND user_id=?').bind(endpoint, uid).run();
+  return json({ ok: true });
+}
+
+function notifyUser(env, ctx, userId) {
+  if (!env.VAPID_PRIVATE_KEY || !env.VAPID_PUBLIC_KEY) return;
+  const run = async () => {
+    const subs = await env.DB.prepare('SELECT endpoint FROM push_subs WHERE user_id=?').bind(userId).all();
+    for (const s of subs.results) await sendPush(env, s.endpoint);
+  };
+  if (ctx && ctx.waitUntil) ctx.waitUntil(run()); else run();
+}
+
+async function sendPush(env, endpoint) {
+  try {
+    const auth = await vapidAuth(env, endpoint);
+    const r = await fetch(endpoint, { method: 'POST', headers: { Authorization: auth, TTL: '86400' } });
+    if (r.status === 404 || r.status === 410) {
+      await env.DB.prepare('DELETE FROM push_subs WHERE endpoint=?').bind(endpoint).run();
+    }
+    return r.ok;
+  } catch (e) { return false; }
+}
+
+async function vapidAuth(env, endpoint) {
+  const aud = new URL(endpoint).origin;
+  const header = b64url(JSON.stringify({ typ: 'JWT', alg: 'ES256' }));
+  const payload = b64url(JSON.stringify({ aud, exp: Math.floor(Date.now() / 1000) + 43200, sub: env.VAPID_SUBJECT || 'mailto:admin@example.com' }));
+  const unsigned = `${header}.${payload}`;
+  const key = await importVapidKey(env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
+  const sig = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, new TextEncoder().encode(unsigned));
+  const jwt = `${unsigned}.${b64urlBytes(new Uint8Array(sig))}`;
+  return `vapid t=${jwt}, k=${env.VAPID_PUBLIC_KEY}`;
+}
+
+async function importVapidKey(pub, priv) {
+  const raw = b64urlToBytes(pub);
+  const jwk = { kty: 'EC', crv: 'P-256', x: b64urlBytes(raw.slice(1, 33)), y: b64urlBytes(raw.slice(33, 65)), d: priv, ext: true };
+  return crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+}
+function b64url(str) { return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+function b64urlBytes(bytes) { let s = ''; for (const b of bytes) s += String.fromCharCode(b); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+function b64urlToBytes(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
+
 async function unmatch(request, env) {
   const uid = await auth(request, env);
   if (!uid) return json({ error: 'unauthorized' }, 401);
@@ -642,7 +708,7 @@ async function listMessages(request, env, url) {
   return json({ items: rows.results, me: uid, read_at: rd?.last_read_at || 0 });
 }
 
-async function sendMessage(request, env) {
+async function sendMessage(request, env, ctx) {
   const uid = await auth(request, env);
   if (!uid) return json({ error: 'unauthorized' }, 401);
   const u = await env.DB.prepare('SELECT plan FROM users WHERE id=?').bind(uid).first();
@@ -652,10 +718,13 @@ async function sendMessage(request, env) {
   const text = (body || '').trim();
   if (!text) return json({ error: '本文が空です' }, 400);
   if (text.length > 2000) return json({ error: '長すぎます' }, 400);
-  if (!match_id || !(await matchMember(env, match_id, uid))) return json({ error: 'not found' }, 404);
+  const row = match_id ? await matchMember(env, match_id, uid) : null;
+  if (!row) return json({ error: 'not found' }, 404);
   const id = uuid(), now = Date.now();
   await env.DB.prepare('INSERT INTO messages (id,match_id,from_id,body,created_at) VALUES (?,?,?,?,?)')
     .bind(id, match_id, uid, text, now).run();
+  const other = row.a_id === uid ? row.b_id : row.a_id;
+  notifyUser(env, ctx, other);
   return json({ id, from_id: uid, body: text, created_at: now });
 }
 

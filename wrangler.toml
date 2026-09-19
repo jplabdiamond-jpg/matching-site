@@ -34,3 +34,5 @@ STRIPE_PRICE_PREMIUM  = "price_xxx_premium"
 #   wrangler secret put STRIPE_SECRET_KEY
 #   wrangler secret put STRIPE_WEBHOOK_SECRET
 GOOGLE_CLIENT_ID = "765477829617-l0mro3nmgb4cu70mhnigqeu5v0r0r60o.apps.googleusercontent.com"
+VAPID_PUBLIC_KEY = "BGEQcu8szURSFDFprum53ffOL-pIS8veje56hFUWywyBhkDqCh9uCw_XRUJKI9fsDW_L3C7-YOPMGf07zIDue3c"
+VAPID_SUBJECT = "mailto:jp.lab.diamond@gmail.com"
