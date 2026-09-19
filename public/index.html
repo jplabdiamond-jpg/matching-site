@@ -50,7 +50,7 @@
   .meta{color:var(--muted);font-size:13px;margin:2px 0 8px}
   .tag{font-family:"Shippori Mincho",serif;font-size:13.5px;color:#6a5d64;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
   /* modals */
-  .scrim{position:fixed;inset:0;background:rgba(44,36,48,.5);backdrop-filter:blur(2px);display:none;place-items:center;z-index:40;padding:20px}
+  .scrim{position:fixed;inset:0;background:rgba(44,36,48,.5);backdrop-filter:blur(2px);display:none;place-items:center;z-index:70;padding:20px}
   .scrim.on{display:grid}
   .modal{background:var(--surface);border-radius:20px;max-width:440px;width:100%;padding:26px;box-shadow:0 20px 60px rgba(44,36,48,.25);max-height:86vh;overflow:auto}
   .modal h2{font-family:"Shippori Mincho",serif;font-weight:500;margin:0 0 4px;color:var(--anchor)}
@@ -724,6 +724,7 @@ async function openBlockList(){
       </div>`).join(''):'<p class="note">ブロックした人はいません。</p>';
     document.getElementById('pModal').innerHTML=`<h2 class="mincho">ブロックした人</h2><div style="margin-top:10px">${list}</div>
       <button class="ghost full" style="margin-top:12px;border:1px solid var(--line)" onclick="document.getElementById('pScrim').classList.remove('on')">閉じる</button>`;
+    document.getElementById('myScrim').classList.remove('on');
     document.getElementById('pScrim').classList.add('on');
   }catch(e){ toast(e.message); }
 }
