@@ -42,6 +42,11 @@ async function route(request, env, url) {
   if (p === '/api/unmatch'         && m === 'POST') return unmatch(request, env);
   if (p === '/api/report'          && m === 'POST') return report(request, env);
   if (p === '/api/messages/delete' && m === 'POST') return messagesDelete(request, env);
+  if (p === '/api/profile/update'  && m === 'POST') return profileUpdate(request, env);
+  if (p === '/api/photos/upload'   && m === 'POST') return photoUpload(request, env);
+  if (p === '/api/photos/mine'     && m === 'GET')  return photosMine(request, env);
+  if (p === '/api/photos/main'     && m === 'POST') return photoMain(request, env);
+  if (p === '/api/photos/delete'   && m === 'POST') return photoDelete(request, env);
 
   // messaging
   if (p === '/api/messages' && m === 'GET')  return listMessages(request, env, url);
@@ -85,6 +90,7 @@ async function login(request, env) {
   const u = await env.DB.prepare('SELECT id,pass_hash,plan FROM users WHERE email=?').bind(email).first();
   if (!u || !(await verifyPassword(password, u.pass_hash)))
     return json({ error: 'メールまたはパスワードが違います' }, 401);
+  await env.DB.prepare('UPDATE profiles SET last_active=? WHERE user_id=?').bind(Date.now(), u.id).run();
   return withSession(u.id, env, json({ id: u.id, email, plan: u.plan }));
 }
 
@@ -99,10 +105,15 @@ async function logout(request, env) {
 async function me(request, env) {
   const uid = await auth(request, env);
   if (!uid) return json({ error: 'unauthorized' }, 401);
+  await env.DB.prepare('UPDATE profiles SET last_active=? WHERE user_id=?').bind(Date.now(), uid).run();
   const u = await env.DB.prepare(
-    `SELECT u.id,u.email,u.plan,u.email_verified,p.display_name,p.gender,p.age,p.area,p.verified,p.photo_key
+    `SELECT u.id,u.email,u.plan,u.email_verified,p.display_name,p.gender,p.age,p.area,p.tagline,p.bio,p.verified,p.photo_key
      FROM users u LEFT JOIN profiles p ON p.user_id=u.id WHERE u.id=?`).bind(uid).first();
-  if (u) u.needs_onboarding = u.display_name ? 0 : 1;
+  if (u) {
+    u.needs_onboarding = u.display_name ? 0 : 1;
+    const ph = await env.DB.prepare('SELECT key FROM profile_photos WHERE user_id=? ORDER BY created_at ASC').bind(uid).all();
+    u.photos = ph.results.map(r => r.key);
+  }
   return json(u);
 }
 
@@ -284,10 +295,83 @@ async function profileOne(request, env, url) {
   const id = url.searchParams.get('user_id');
   if (!id) return json({ error: 'invalid' }, 400);
   const p = await env.DB.prepare(
-    'SELECT user_id,display_name,gender,age,area,tagline,photo_key,verified FROM profiles WHERE user_id=?')
+    'SELECT user_id,display_name,gender,age,area,tagline,bio,photo_key,verified,last_active FROM profiles WHERE user_id=?')
     .bind(id).first();
   if (!p) return json({ error: 'not found' }, 404);
+  const ph = await env.DB.prepare('SELECT key FROM profile_photos WHERE user_id=? ORDER BY created_at ASC').bind(id).all();
+  let photos = ph.results.map(r => r.key);
+  if (p.photo_key) photos = [p.photo_key, ...photos.filter(k => k !== p.photo_key)];
+  p.photos = photos;
   return json(p);
+}
+
+async function profileUpdate(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const b = await request.json();
+  const fields = [], vals = [];
+  if (b.display_name != null) { if (!String(b.display_name).trim()) return json({ error: 'ニックネームを入力してください' }, 400); fields.push('display_name=?'); vals.push(String(b.display_name).trim().slice(0, 40)); }
+  if (b.tagline != null) { fields.push('tagline=?'); vals.push(String(b.tagline).slice(0, 120)); }
+  if (b.bio != null) { fields.push('bio=?'); vals.push(String(b.bio).slice(0, 2000)); }
+  if (b.area != null) { fields.push('area=?'); vals.push(String(b.area)); }
+  if (b.gender != null) { fields.push('gender=?'); vals.push(String(b.gender)); }
+  if (b.age != null) { const a = Number(b.age); if (!(a >= 18)) return json({ error: '18歳以上で入力してください' }, 400); fields.push('age=?'); vals.push(a); }
+  if (!fields.length) return json({ error: '変更がありません' }, 400);
+  fields.push('last_active=?'); vals.push(Date.now());
+  await env.DB.prepare(`UPDATE profiles SET ${fields.join(',')} WHERE user_id=?`).bind(...vals, uid).run();
+  return json({ ok: true });
+}
+
+async function photoUpload(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const ct = request.headers.get('Content-Type') || '';
+  if (!EXT[ct]) return json({ error: 'JPEG / PNG / WebP のみ対応しています' }, 400);
+  const buf = await request.arrayBuffer();
+  if (buf.byteLength > 5 * 1024 * 1024) return json({ error: '5MBまでにしてください' }, 400);
+  const cnt = await env.DB.prepare('SELECT COUNT(*) AS c FROM profile_photos WHERE user_id=?').bind(uid).first();
+  if ((cnt.c || 0) >= 6) return json({ error: '写真は6枚までです' }, 400);
+  const key = `photos/${uid}-${Date.now()}.${EXT[ct]}`;
+  await env.PHOTOS.put(key, buf, { httpMetadata: { contentType: ct } });
+  const now = Date.now();
+  await env.DB.prepare('INSERT INTO profile_photos (id,user_id,key,ord,created_at) VALUES (?,?,?,?,?)').bind(uuid(), uid, key, now, now).run();
+  const p = await env.DB.prepare('SELECT photo_key FROM profiles WHERE user_id=?').bind(uid).first();
+  if (!p || !p.photo_key) await env.DB.prepare('UPDATE profiles SET photo_key=? WHERE user_id=?').bind(key, uid).run();
+  return json({ key });
+}
+
+async function photosMine(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const rows = await env.DB.prepare('SELECT key FROM profile_photos WHERE user_id=? ORDER BY created_at ASC').bind(uid).all();
+  const p = await env.DB.prepare('SELECT photo_key FROM profiles WHERE user_id=?').bind(uid).first();
+  return json({ items: rows.results.map(r => r.key), main: p ? p.photo_key : null });
+}
+
+async function photoMain(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { key } = await request.json();
+  const own = await env.DB.prepare('SELECT 1 FROM profile_photos WHERE user_id=? AND key=?').bind(uid, key).first();
+  if (!own) return json({ error: 'not found' }, 404);
+  await env.DB.prepare('UPDATE profiles SET photo_key=? WHERE user_id=?').bind(key, uid).run();
+  return json({ ok: true });
+}
+
+async function photoDelete(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { key } = await request.json();
+  const own = await env.DB.prepare('SELECT 1 FROM profile_photos WHERE user_id=? AND key=?').bind(uid, key).first();
+  if (!own) return json({ error: 'not found' }, 404);
+  await env.DB.prepare('DELETE FROM profile_photos WHERE user_id=? AND key=?').bind(uid, key).run();
+  try { await env.PHOTOS.delete(key); } catch (e) {}
+  const p = await env.DB.prepare('SELECT photo_key FROM profiles WHERE user_id=?').bind(uid).first();
+  if (p && p.photo_key === key) {
+    const next = await env.DB.prepare('SELECT key FROM profile_photos WHERE user_id=? ORDER BY created_at ASC LIMIT 1').bind(uid).first();
+    await env.DB.prepare('UPDATE profiles SET photo_key=? WHERE user_id=?').bind(next ? next.key : null, uid).run();
+  }
+  return json({ ok: true });
 }
 
 async function unmatch(request, env) {

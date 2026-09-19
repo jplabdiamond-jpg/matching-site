@@ -147,7 +147,7 @@
   </div>
 </header>
 <div class="menu" id="acctMenu">
-  <button onclick="pickPhoto()">プロフィール写真を追加</button>
+  <button onclick="openMyPage()">マイページ（プロフィール編集）</button>
   <button onclick="pickVerify()">本人確認を申請</button>
   <button onclick="doLogout()">ログアウト</button>
 </div>
@@ -208,6 +208,7 @@
 <div class="scrim" id="pScrim"><div class="modal" id="pModal"></div></div>
 <div class="scrim" id="likesScrim"><div class="modal" id="likesModal"></div></div>
 <div class="scrim" id="onboardScrim"><div class="modal" id="onboardModal"></div></div>
+<div class="scrim" id="myScrim"><div class="modal" id="myModal"></div></div>
 
 <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" style="display:none">
 <input type="file" id="verifyInput" accept="image/jpeg,image/png,image/webp,application/pdf" style="display:none">
@@ -263,21 +264,34 @@ async function loadProfiles(){
       <div class="info"><div class="name"><b>${esc(it.display_name)}</b> ${it.age}</div>
         <div class="meta">${gLabel[it.gender]||''}・${esc(it.area)}</div>
         <div class="tag">${esc(it.tagline)}</div></div>`;
-    el.onclick=()=>openProfile(it);
+    el.onclick=()=>openProfileById(it.user_id);
     grid.appendChild(el);
   }
 }
 ['fGender','fArea','fAge'].forEach(id=>document.getElementById(id).onchange=loadProfiles);
 
-function openProfile(it){
+async function openProfileById(id){
+  if(!id)return;
+  try{ const p=await api('/profile?user_id='+encodeURIComponent(id)); renderProfile(p); }
+  catch(e){ toast(e.message); }
+}
+function renderProfile(p){
+  const photos=(p.photos&&p.photos.length)?p.photos:[];
+  const mainImg=photos.length
+    ? `<img id="pfMain" src="${photoURL(photos[0])}" style="width:100%;height:300px;object-fit:cover;border-radius:14px">`
+    : `<div class="big" style="width:100%;height:180px;border-radius:14px;background:${grad(p.display_name)}"><span class="ini" style="font-size:56px">${esc(String(p.display_name)[0]||'?')}</span></div>`;
+  const thumbs=photos.length>1
+    ? `<div style="display:flex;gap:8px;margin-top:8px;overflow-x:auto">${photos.map(k=>`<img src="${photoURL(k)}" onclick="var m=document.getElementById('pfMain');if(m)m.src='${photoURL(k)}'" style="width:56px;height:56px;object-fit:cover;border-radius:8px;cursor:pointer;flex:none">`).join('')}</div>`
+    : '';
   document.getElementById('pModal').innerHTML=`
-    <div class="big" style="background:${grad(it.display_name)}">${avatarHTML(it)}</div>
-    <h2 class="mincho">${esc(it.display_name)} <span style="font-size:18px">${it.age}</span></h2>
-    <div class="meta">${gLabel[it.gender]||''}・${esc(it.area)} ${it.verified?'・<span style="color:var(--safe)">本人確認済み</span>':''}</div>
-    <p class="mincho" style="color:#6a5d64;margin:14px 0">${esc(it.tagline)}</p>
-    <button class="solid full" id="likeBtn">いいねを送る</button>`;
+    ${mainImg}${thumbs}
+    <h2 class="mincho" style="margin-top:14px">${esc(p.display_name)} <span style="font-size:18px">${p.age}</span></h2>
+    <div class="meta">${gLabel[p.gender]||''}・${esc(p.area)} ${p.verified?'・<span style="color:var(--safe)">本人確認済み</span>':''}</div>
+    ${p.tagline?`<p class="mincho" style="color:#6a5d64;margin:12px 0 4px">${esc(p.tagline)}</p>`:''}
+    ${p.bio?`<p style="color:#5a5057;font-size:14px;white-space:pre-wrap;margin:8px 0 4px">${esc(p.bio)}</p>`:''}
+    ${me&&me.id===p.user_id?'':`<button class="solid full" id="likeBtn">いいねを送る</button>`}`;
   document.getElementById('pScrim').classList.add('on');
-  document.getElementById('likeBtn').onclick=()=>sendLike(it.user_id);
+  const lb=document.getElementById('likeBtn'); if(lb) lb.onclick=()=>sendLike(p.user_id);
 }
 async function sendLike(to){
   if(!me){closeModals();openAuth('signup');return;}
@@ -292,7 +306,7 @@ async function openLikes(){
   const {items}=await api('/likes/received'); likesItems=items;
   const list=items.length?items.map((it,i)=>`
     <div class="lcard">
-      <div class="lav" style="background:${grad(it.display_name)}" onclick="openProfile(likesItems[${i}])">${avatarHTML(it)}</div>
+      <div class="lav" style="background:${grad(it.display_name)}" onclick="openProfileById('${it.user_id}')">${avatarHTML(it)}</div>
       <div class="lbody">
         <div class="name"><b>${esc(it.display_name)}</b> ${it.age}</div>
         <div class="meta">${gLabel[it.gender]||''}・${esc(it.area)} ${it.verified?'・<span style="color:var(--safe)">本人確認済み</span>':''}</div>
@@ -439,7 +453,7 @@ function buildChatMenu(){
 }
 function openChatMenu(){ document.getElementById('chatMenuScrim').classList.add('on'); }
 function closeChatMenu(){ const s=document.getElementById('chatMenuScrim'); if(s)s.classList.remove('on'); }
-async function viewPartnerProfile(){ closeChatMenu(); if(!chatState.partnerId)return; try{const p=await api('/profile?user_id='+encodeURIComponent(chatState.partnerId));openProfile(p);}catch(e){toast(e.message);} }
+function viewPartnerProfile(){ closeChatMenu(); if(!chatState.partnerId)return; openProfileById(chatState.partnerId); }
 async function doUnmatch(){ closeChatMenu(); if(!confirm('マッチングを解除しますか？トーク履歴も削除されます。'))return; try{await jpost('/unmatch',{match_id:chatState.matchId});toast('マッチングを解除しました');await pollUnread();goMessages();}catch(e){toast(e.message);} }
 async function doReport(){ closeChatMenu(); const reason=prompt('通報の理由（任意）'); if(reason===null)return; try{await jpost('/report',{target_id:chatState.partnerId,reason});toast('通報しました。ご協力ありがとうございます');}catch(e){toast(e.message);} }
 /* ---- トーク選択削除 ---- */
@@ -491,9 +505,66 @@ document.getElementById('photoInput').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if(!f)return;
   if(f.size>5*1024*1024){toast('5MBまでにしてください');return;}
   toast('アップロード中…');
-  try{await api('/upload',{method:'POST',headers:{'Content-Type':f.type},body:f});await loadMe();await loadProfiles();toast('写真を更新しました');}
-  catch(err){toast(err.message);}
+  try{
+    await api('/photos/upload',{method:'POST',headers:{'Content-Type':f.type},body:f});
+    await loadMe(); await loadProfiles();
+    if(document.getElementById('myScrim').classList.contains('on')){ const pd=await api('/photos/mine'); renderMyPage(pd); }
+    toast('写真を追加しました');
+  }catch(err){toast(err.message);}
 };
+
+/* ---- マイページ（プロフィール編集）---- */
+async function openMyPage(hint){
+  toggleMenu(false); if(!me)return;
+  let pd={items:[],main:null};
+  try{ pd=await api('/photos/mine'); }catch{}
+  renderMyPage(pd,hint);
+  document.getElementById('myScrim').classList.add('on');
+}
+function renderMyPage(pd,hint){
+  const photos=pd.items||[];
+  const grid=photos.length?`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${photos.map(k=>`
+    <div style="position:relative">
+      <img src="${photoURL(k)}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;${k===pd.main?'outline:3px solid var(--accent);outline-offset:-3px':''}">
+      ${k===pd.main?'<span style="position:absolute;top:4px;left:4px;background:var(--accent);color:#fff;font-size:10px;padding:2px 6px;border-radius:999px">メイン</span>':`<button onclick="setMainPhoto('${k}')" style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;padding:3px 7px;border-radius:999px;border:none;cursor:pointer">メインに</button>`}
+      <button onclick="deletePhoto('${k}')" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;width:22px;height:22px;border-radius:50%;border:none;line-height:1;cursor:pointer">×</button>
+    </div>`).join('')}</div>`:'<p class="note">まだ写真がありません。1枚追加するとマッチしやすくなります。</p>';
+  document.getElementById('myModal').innerHTML=`
+    <h2 class="mincho">マイページ</h2>
+    ${hint?'<p class="note" style="color:var(--accent);margin:6px 0 10px">プロフィール写真を追加すると、ぐっとマッチしやすくなります。</p>':''}
+    <div style="font-size:12px;color:var(--muted);margin:12px 0 6px">写真（最大6枚・メインが一覧に表示されます）</div>
+    ${grid}
+    <button class="ghost full" style="border:1px solid var(--line);margin-top:10px" onclick="document.getElementById('photoInput').click()">写真を追加</button>
+    <div class="field" style="margin-top:16px"><label>ニックネーム</label><input id="myName" value="${esc(me.display_name||'')}"></div>
+    <div class="row2">
+      <div class="field"><label>性別</label><select id="myGender">
+        <option value="female"${me.gender==='female'?' selected':''}>女性</option>
+        <option value="male"${me.gender==='male'?' selected':''}>男性</option>
+        <option value="other"${me.gender==='other'?' selected':''}>その他</option></select></div>
+      <div class="field"><label>年齢</label><input id="myAge" type="number" min="18" value="${me.age||''}"></div></div>
+    <div class="field"><label>エリア</label><select id="myArea">${AREAS.map(a=>`<option${me.area===a?' selected':''}>${a}</option>`).join('')}</select></div>
+    <div class="field"><label>一言コメント</label><input id="myTag" maxlength="120" value="${esc(me.tagline||'')}"></div>
+    <div class="field"><label>自己紹介</label><textarea id="myBio" rows="4" maxlength="2000" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px;resize:vertical">${esc(me.bio||'')}</textarea></div>
+    <div class="err" id="myErr"></div>
+    <button class="solid full" onclick="saveMyPage()">保存する</button>
+    <button class="ghost full" style="margin-top:6px" onclick="document.getElementById('myScrim').classList.remove('on')">閉じる</button>`;
+}
+async function saveMyPage(){
+  const err=document.getElementById('myErr'); err.textContent='';
+  try{
+    await jpost('/profile/update',{
+      display_name:document.getElementById('myName').value.trim(),
+      gender:document.getElementById('myGender').value,
+      age:document.getElementById('myAge').value,
+      area:document.getElementById('myArea').value,
+      tagline:document.getElementById('myTag').value.trim(),
+      bio:document.getElementById('myBio').value.trim()});
+    document.getElementById('myScrim').classList.remove('on');
+    await loadMe(); await loadProfiles(); toast('プロフィールを更新しました');
+  }catch(e){ err.textContent=e.message; }
+}
+async function setMainPhoto(k){ try{await jpost('/photos/main',{key:k});await loadMe();const pd=await api('/photos/mine');renderMyPage(pd);await loadProfiles();toast('メイン写真を変更しました');}catch(e){toast(e.message);} }
+async function deletePhoto(k){ if(!confirm('この写真を削除しますか？'))return; try{await jpost('/photos/delete',{key:k});await loadMe();const pd=await api('/photos/mine');renderMyPage(pd);await loadProfiles();toast('写真を削除しました');}catch(e){toast(e.message);} }
 document.getElementById('verifyInput').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if(!f)return;
   if(f.size>8*1024*1024){toast('8MBまでにしてください');return;}
@@ -520,6 +591,7 @@ async function submitOnboard(){
   const err=document.getElementById('oErr'); err.textContent='';
   try{ await jpost('/onboard',{display_name:v('oName'),gender:v('oGender'),age:v('oAge'),area:v('oArea')});
     document.getElementById('onboardScrim').classList.remove('on'); await loadMe(); await loadProfiles(); toast('ようこそ');
+    if(me && !me.photo_key) openMyPage(true);
   }catch(e){ err.textContent=e.message; }
 }
 
@@ -547,7 +619,8 @@ async function submitAuth(isSignup){
   const err=document.getElementById('authErr'); err.textContent='';
   const body={email:v('aEmail'),password:v('aPass')};
   if(isSignup)Object.assign(body,{display_name:v('aName'),gender:v('aGender'),age:v('aAge'),area:v('aArea')});
-  try{await jpost(isSignup?'/signup':'/login',body);closeModals();await loadMe();await loadProfiles();toast('ようこそ');}
+  try{await jpost(isSignup?'/signup':'/login',body);closeModals();await loadMe();await loadProfiles();toast('ようこそ');
+    if(isSignup && me && !me.photo_key) openMyPage(true);}
   catch(e){err.textContent=e.message;}
 }
 const v=id=>document.getElementById(id).value.trim();
