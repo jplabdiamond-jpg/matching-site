@@ -210,7 +210,6 @@ async function onboard(request, env) {
 async function listProfiles(request, env, url) {
   const uid = await auth(request, env);
   const q = url.searchParams, where = ['1=1'], bind = [];
-  if (q.get('gender')) { where.push('gender=?'); bind.push(q.get('gender')); }
   if (q.get('area'))   { where.push('area=?');   bind.push(q.get('area')); }
   if (q.get('min'))    { where.push('age>=?');   bind.push(Number(q.get('min'))); }
   if (q.get('max'))    { where.push('age<=?');   bind.push(Number(q.get('max'))); }
@@ -219,12 +218,17 @@ async function listProfiles(request, env, url) {
   if (q.get('online') === '1')   { where.push('last_active>?'); bind.push(Date.now() - 5 * 60000); }
   if (q.get('tag'))    { where.push('EXISTS (SELECT 1 FROM profile_tags t WHERE t.user_id=profiles.user_id AND t.tag=?)'); bind.push(q.get('tag')); }
   if (uid) {
+    const meRow = await env.DB.prepare('SELECT gender FROM profiles WHERE user_id=?').bind(uid).first();
+    if (meRow?.gender === 'male') { where.push('gender=?'); bind.push('female'); }
+    else if (meRow?.gender === 'female') { where.push('gender=?'); bind.push('male'); }
+    else if (q.get('gender')) { where.push('gender=?'); bind.push(q.get('gender')); }
     where.push('user_id!=?'); bind.push(uid);
     where.push('NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=profiles.user_id) OR (b.blocker_id=profiles.user_id AND b.blocked_id=?))');
     bind.push(uid, uid);
     where.push('(private_mode=0 OR EXISTS (SELECT 1 FROM likes l WHERE l.from_id=profiles.user_id AND l.to_id=?))');
     bind.push(uid);
   } else {
+    if (q.get('gender')) { where.push('gender=?'); bind.push(q.get('gender')); }
     where.push('private_mode=0');
   }
   const limit = Math.min(Number(q.get('limit') || 24), 48), offset = Number(q.get('offset') || 0);

@@ -194,7 +194,6 @@
   </section>
   <div class="filters">
     <input id="fQ" placeholder="キーワード（名前・自己紹介）" style="flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px;background:var(--surface)">
-    <select id="fGender"><option value="">性別すべて</option><option value="female">女性</option><option value="male">男性</option><option value="other">その他</option></select>
     <select id="fArea"><option value="">エリアすべて</option><option>東京都</option><option>神奈川県</option><option>大阪府</option><option>愛知県</option><option>福岡県</option><option>北海道</option></select>
     <select id="fAge"><option value="">年齢すべて</option><option value="20,29">20代</option><option value="30,39">30代</option><option value="40,49">40代</option><option value="50,120">50代以上</option></select>
     <select id="fSort"><option value="active">アクティブ順</option><option value="new">新着順</option></select>
@@ -322,11 +321,11 @@ async function loadProfiles(reset=true){
   if(reset){ expState={offset:0,loading:false,done:false}; document.getElementById('grid').innerHTML=''; }
   if(expState.done)return;
   expState.loading=true;
-  const g=document.getElementById('fGender').value,a=document.getElementById('fArea').value;
+  const a=document.getElementById('fArea').value;
   const [min,max]=(document.getElementById('fAge').value||'').split(',');
   const kw=document.getElementById('fQ').value.trim();
   const qs=new URLSearchParams();
-  if(g)qs.set('gender',g); if(a)qs.set('area',a); if(min)qs.set('min',min); if(max)qs.set('max',max);
+  if(a)qs.set('area',a); if(min)qs.set('min',min); if(max)qs.set('max',max);
   if(kw)qs.set('q',kw);
   qs.set('sort',document.getElementById('fSort').value);
   if(document.getElementById('fVerified').checked)qs.set('verified','1');
@@ -343,7 +342,7 @@ async function loadProfiles(reset=true){
   }catch(e){}
   expState.loading=false;
 }
-['fGender','fArea','fAge','fSort'].forEach(id=>document.getElementById(id).onchange=()=>loadProfiles(true));
+['fArea','fAge','fSort'].forEach(id=>document.getElementById(id).onchange=()=>loadProfiles(true));
 document.getElementById('fVerified').onchange=()=>loadProfiles(true);
 document.getElementById('fOnline').onchange=()=>loadProfiles(true);
 let qTimer=null;
@@ -649,7 +648,7 @@ async function pollUnread(){
     if(document.getElementById('view-messages').classList.contains('on')) loadConversations();
   }catch(e){}
 }
-function setBadge(id,n){ [id,id+'B'].forEach(x=>{const b=document.getElementById(x); if(!b)return; if(n>0){b.textContent=n>99?'99+':n;b.style.display='';}else b.style.display='none';}); }
+function setBadge(id,n){ [id,id+'B'].forEach(x=>{const b=document.getElementById(x); if(!b)return; b.textContent=n>99?'99+':n; b.style.display = n>0 ? (b.classList.contains('nbadge')?'grid':'inline-grid') : 'none'; }); }
 function startUnreadPoll(){ pollUnread(); if(!unreadTimer) unreadTimer=setInterval(pollUnread,15000); }
 function stopUnreadPoll(){ if(unreadTimer){clearInterval(unreadTimer);unreadTimer=null;} setBadge('msgBadge',0); setBadge('likesBadge',0); setBadge('footBadge',0); }
 function refreshLikeBadge(){ pollUnread(); }
