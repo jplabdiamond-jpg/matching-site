@@ -35,6 +35,7 @@ async function route(request, env, url) {
   if (p === '/api/like'     && m === 'POST') return like(request, env);
   if (p === '/api/matches'  && m === 'GET')  return listMatches(request, env);
   if (p === '/api/likes/received' && m === 'GET') return likesReceived(request, env);
+  if (p === '/api/footprints'     && m === 'GET') return footprints(request, env);
   if (p === '/api/conversations'  && m === 'GET') return conversations(request, env);
   if (p === '/api/unread'         && m === 'GET') return unread(request, env);
   if (p === '/api/read'           && m === 'POST') return markRead(request, env);
@@ -278,7 +279,8 @@ async function conversations(request, env) {
 
 async function unread(request, env) {
   const uid = await auth(request, env);
-  if (!uid) return json({ messages: 0, likes: 0 });
+  if (!uid) return json({ messages: 0, likes: 0, footprints: 0 });
+  await env.DB.prepare('UPDATE profiles SET last_active=? WHERE user_id=?').bind(Date.now(), uid).run();
   const mres = await env.DB.prepare(
     `SELECT COUNT(*) AS c FROM messages x JOIN matches m ON m.id=x.match_id
      WHERE (m.a_id=? OR m.b_id=?) AND x.from_id<>?
@@ -288,7 +290,11 @@ async function unread(request, env) {
     `SELECT COUNT(*) AS c FROM likes l
      WHERE l.to_id=? AND NOT EXISTS (SELECT 1 FROM likes l2 WHERE l2.from_id=? AND l2.to_id=l.from_id)`)
     .bind(uid, uid).first();
-  return json({ messages: mres.c || 0, likes: lres.c || 0 });
+  const fres = await env.DB.prepare(
+    `SELECT COUNT(*) AS c FROM footprints f
+     WHERE f.owner_id=? AND f.last_at > (SELECT COALESCE(footprints_seen_at,0) FROM profiles WHERE user_id=?)`)
+    .bind(uid, uid).first();
+  return json({ messages: mres.c || 0, likes: lres.c || 0, footprints: fres.c || 0 });
 }
 
 async function markRead(request, env) {
@@ -304,18 +310,37 @@ async function markRead(request, env) {
 }
 
 async function profileOne(request, env, url) {
-  await auth(request, env);
+  const uid = await auth(request, env);
   const id = url.searchParams.get('user_id');
   if (!id) return json({ error: 'invalid' }, 400);
   const p = await env.DB.prepare(
     'SELECT user_id,display_name,gender,age,area,tagline,bio,photo_key,verified,last_active FROM profiles WHERE user_id=?')
     .bind(id).first();
   if (!p) return json({ error: 'not found' }, 404);
+  if (uid && uid !== id) {
+    await env.DB.prepare(
+      `INSERT INTO footprints (viewer_id,owner_id,last_at) VALUES (?,?,?)
+       ON CONFLICT(viewer_id,owner_id) DO UPDATE SET last_at=excluded.last_at`)
+      .bind(uid, id, Date.now()).run();
+  }
   const ph = await env.DB.prepare('SELECT key FROM profile_photos WHERE user_id=? ORDER BY created_at ASC').bind(id).all();
   let photos = ph.results.map(r => r.key);
   if (p.photo_key) photos = [p.photo_key, ...photos.filter(k => k !== p.photo_key)];
   p.photos = photos;
   return json(p);
+}
+
+async function footprints(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const rows = await env.DB.prepare(
+    `SELECT p.user_id,p.display_name,p.gender,p.age,p.area,p.photo_key,p.verified,p.last_active,f.last_at
+     FROM footprints f JOIN profiles p ON p.user_id=f.viewer_id
+     WHERE f.owner_id=?
+       AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=f.viewer_id) OR (b.blocker_id=f.viewer_id AND b.blocked_id=?))
+     ORDER BY f.last_at DESC LIMIT 100`).bind(uid, uid, uid).all();
+  await env.DB.prepare('UPDATE profiles SET footprints_seen_at=? WHERE user_id=?').bind(Date.now(), uid).run();
+  return json({ items: rows.results });
 }
 
 async function profileUpdate(request, env) {

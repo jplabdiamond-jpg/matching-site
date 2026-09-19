@@ -26,7 +26,9 @@
   .ghost:hover{background:#F3E9E7}
   .solid{background:var(--anchor);color:#fff;padding:9px 20px}
   .solid:hover{background:#4a2138}
-  body:not(.ready) #loginBtn, body:not(.ready) #signupBtn, body:not(.ready) #msgBtn, body:not(.ready) #likesBtn{visibility:hidden}
+  body:not(.ready) #loginBtn, body:not(.ready) #signupBtn, body:not(.ready) #msgBtn, body:not(.ready) #likesBtn, body:not(.ready) #footBtn{visibility:hidden}
+  .odot{position:absolute;top:10px;right:10px;width:12px;height:12px;border-radius:50%;background:#3fb27f;border:2px solid #fff;z-index:2}
+  .online{color:#3fb27f;font-weight:500}
   .hbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:5px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;vertical-align:middle}
   .lead{max-width:1080px;margin:0 auto;padding:40px 20px 8px}
   .lead h1{font-family:"Shippori Mincho",serif;font-weight:500;font-size:clamp(26px,4.4vw,40px);line-height:1.5;margin:0 0 12px;color:var(--anchor)}
@@ -140,6 +142,7 @@
   <div class="bar">
     <div class="brand">ソワレ<small>SOIRÉE MATCHING</small></div>
     <div class="spacer"></div>
+    <button class="ghost" id="footBtn" style="display:none">足あと<span class="hbadge" id="footBadge" style="display:none">0</span></button>
     <button class="ghost" id="likesBtn" style="display:none">相手からのいいね<span class="hbadge" id="likesBadge" style="display:none">0</span></button>
     <button class="ghost" id="msgBtn" style="display:none">メッセージ<span class="hbadge" id="msgBadge" style="display:none">0</span></button>
     <button class="ghost" id="loginBtn">ログイン</button>
@@ -221,7 +224,7 @@ const grad=s=>GRAD[[...String(s)].reduce((a,c)=>a+c.charCodeAt(0),0)%GRAD.length
 const gLabel={female:'女性',male:'男性',other:'その他'};
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const photoURL=k=>'/api/photo?key='+encodeURIComponent(k);
-let me=null, convMap={}, convTab='talk', chatState={matchId:null,after:0,timer:null}, unreadState={messages:0,likes:0}, unreadTimer=null;
+let me=null, convMap={}, convTab='talk', chatState={matchId:null,after:0,timer:null}, unreadState={messages:0,likes:0,footprints:0}, unreadTimer=null;
 
 async function api(path,opts={}){
   const r=await fetch('/api'+path,{credentials:'same-origin',...opts});
@@ -239,11 +242,23 @@ function fmtTime(ts){
   return sameDay?d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}):`${d.getMonth()+1}/${d.getDate()}`;
 }
 
+function isOnline(ts){ return ts && (Date.now()-ts)<5*60000; }
+function activeLabel(ts){
+  if(!ts)return'';
+  const m=Math.floor((Date.now()-ts)/60000);
+  if(m<5)return'オンライン中';
+  if(m<60)return m+'分前';
+  const h=Math.floor(m/60); if(h<24)return h+'時間前';
+  const d=Math.floor(h/24); if(d<30)return d+'日前';
+  return '';
+}
+
 async function loadMe(){ try{me=await api('/me');}catch{me=null;} renderAuthState(); }
 function renderAuthState(){
   document.getElementById('loginBtn').style.display=me?'none':'';
   document.getElementById('msgBtn').style.display=me?'':'none';
   document.getElementById('likesBtn').style.display=me?'':'none';
+  document.getElementById('footBtn').style.display=me?'':'none';
   document.getElementById('signupBtn').textContent=me?`${me.display_name||'アカウント'} さん`:'はじめる';
   document.body.classList.add('ready');
   if(me){ startUnreadPoll(); } else { stopUnreadPoll(); }
@@ -260,9 +275,9 @@ async function loadProfiles(){
   grid.innerHTML=items.length?'':'<p style="color:var(--muted)">条件に合う方が見つかりませんでした。</p>';
   for(const it of items){
     const el=document.createElement('div'); el.className='card';
-    el.innerHTML=`<div class="ava" style="background:${grad(it.display_name)}">${it.verified?'<div class="badge">本人確認済み</div>':''}${avatarHTML(it)}</div>
+    el.innerHTML=`<div class="ava" style="background:${grad(it.display_name)}">${it.verified?'<div class="badge">本人確認済み</div>':''}${isOnline(it.last_active)?'<div class="odot"></div>':''}${avatarHTML(it)}</div>
       <div class="info"><div class="name"><b>${esc(it.display_name)}</b> ${it.age}</div>
-        <div class="meta">${gLabel[it.gender]||''}・${esc(it.area)}</div>
+        <div class="meta">${gLabel[it.gender]||''}・${esc(it.area)}${it.last_active?' ・<span class="'+(isOnline(it.last_active)?'online':'')+'">'+activeLabel(it.last_active)+'</span>':''}</div>
         <div class="tag">${esc(it.tagline)}</div></div>`;
     el.onclick=()=>openProfileById(it.user_id);
     grid.appendChild(el);
@@ -286,7 +301,7 @@ function renderProfile(p){
   document.getElementById('pModal').innerHTML=`
     ${mainImg}${thumbs}
     <h2 class="mincho" style="margin-top:14px">${esc(p.display_name)} <span style="font-size:18px">${p.age}</span></h2>
-    <div class="meta">${gLabel[p.gender]||''}・${esc(p.area)} ${p.verified?'・<span style="color:var(--safe)">本人確認済み</span>':''}</div>
+    <div class="meta">${gLabel[p.gender]||''}・${esc(p.area)}${p.last_active?' ・<span class="'+(isOnline(p.last_active)?'online':'')+'">'+activeLabel(p.last_active)+'</span>':''} ${p.verified?'・<span style="color:var(--safe)">本人確認済み</span>':''}</div>
     ${p.tagline?`<p class="mincho" style="color:#6a5d64;margin:12px 0 4px">${esc(p.tagline)}</p>`:''}
     ${p.bio?`<p style="color:#5a5057;font-size:14px;white-space:pre-wrap;margin:8px 0 4px">${esc(p.bio)}</p>`:''}
     ${me&&me.id===p.user_id?'':`<button class="solid full" id="likeBtn">いいねを送る</button>
@@ -326,6 +341,23 @@ async function openLikes(){
 async function likeBack(to){
   try{const r=await jpost('/like',{to_id:to});toast(r.matched?'マッチしました！メッセージから話しかけられます':'いいねを返しました');await pollUnread();await openLikes();}
   catch(e){toast(e.message);}
+}
+async function openFootprints(){
+  if(!me){openAuth('login');return;}
+  const {items}=await api('/footprints');
+  const list=items.length?items.map(it=>`
+    <div class="lcard" style="cursor:pointer" onclick="openProfileById('${it.user_id}')">
+      <div class="lav" style="background:${grad(it.display_name)}">${isOnline(it.last_active)?'<div class="odot"></div>':''}${avatarHTML(it)}</div>
+      <div class="lbody">
+        <div class="name"><b>${esc(it.display_name)}</b> ${it.age}</div>
+        <div class="meta">${gLabel[it.gender]||''}・${esc(it.area)}${it.last_active?' ・<span class="'+(isOnline(it.last_active)?'online':'')+'">'+activeLabel(it.last_active)+'</span>':''}</div>
+        <div class="meta" style="margin:0">${fmtTime(it.last_at)} に訪問</div>
+      </div>
+    </div>`).join(''):'<p style="color:var(--muted)">まだ足あとはありません。</p>';
+  document.getElementById('likesModal').innerHTML=`<h2 class="mincho">足あと</h2>
+    <p class="note" style="margin:4px 0 14px">あなたのプロフィールを見た人です（新しい順）。</p>${list}`;
+  document.getElementById('likesScrim').classList.add('on');
+  pollUnread();
 }
 
 /* ---- ページ遷移（ハッシュルーター）---- */
@@ -496,14 +528,15 @@ async function pollUnread(){
     const u=await api('/unread');
     if(u.messages>unreadState.messages && !document.getElementById('view-chat').classList.contains('on')) toast('新しいメッセージが届きました');
     if(u.likes>unreadState.likes) toast('新しい「いいね」が届きました');
+    if(u.footprints>unreadState.footprints) toast('あなたのプロフィールに足あとが付きました');
     unreadState=u;
-    setBadge('msgBadge',u.messages); setBadge('likesBadge',u.likes);
+    setBadge('msgBadge',u.messages); setBadge('likesBadge',u.likes); setBadge('footBadge',u.footprints||0);
     if(document.getElementById('view-messages').classList.contains('on')) loadConversations();
   }catch(e){}
 }
 function setBadge(id,n){ const b=document.getElementById(id); if(n>0){b.textContent=n>99?'99+':n;b.style.display='';}else b.style.display='none'; }
 function startUnreadPoll(){ pollUnread(); if(!unreadTimer) unreadTimer=setInterval(pollUnread,15000); }
-function stopUnreadPoll(){ if(unreadTimer){clearInterval(unreadTimer);unreadTimer=null;} setBadge('msgBadge',0); setBadge('likesBadge',0); }
+function stopUnreadPoll(){ if(unreadTimer){clearInterval(unreadTimer);unreadTimer=null;} setBadge('msgBadge',0); setBadge('likesBadge',0); setBadge('footBadge',0); }
 function refreshLikeBadge(){ pollUnread(); }
 
 /* ---- 写真 / 本人確認 ---- */
@@ -664,6 +697,7 @@ function toggleMenu(on){document.getElementById('acctMenu').classList.toggle('on
 document.getElementById('loginBtn').onclick=()=>openAuth('login');
 document.getElementById('msgBtn').onclick=navMessages;
 document.getElementById('likesBtn').onclick=openLikes;
+document.getElementById('footBtn').onclick=openFootprints;
 document.getElementById('chatMenuBtn').onclick=openChatMenu;
 document.getElementById('chatMenuScrim').onclick=e=>{ if(e.target.id==='chatMenuScrim') closeChatMenu(); };
 document.getElementById('msgs').addEventListener('click',e=>{ if(!selecting)return; const w=e.target.closest('.bwrap.me'); if(!w)return; w.classList.toggle('sel'); updateSelCnt(); });
