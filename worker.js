@@ -47,6 +47,10 @@ async function route(request, env, url) {
   if (p === '/api/photos/mine'     && m === 'GET')  return photosMine(request, env);
   if (p === '/api/photos/main'     && m === 'POST') return photoMain(request, env);
   if (p === '/api/photos/delete'   && m === 'POST') return photoDelete(request, env);
+  if (p === '/api/block'           && m === 'POST') return block(request, env);
+  if (p === '/api/unblock'         && m === 'POST') return unblock(request, env);
+  if (p === '/api/blocks'          && m === 'GET')  return blocksList(request, env);
+  if (p === '/api/privacy'         && m === 'POST') return privacy(request, env);
 
   // messaging
   if (p === '/api/messages' && m === 'GET')  return listMessages(request, env, url);
@@ -107,7 +111,7 @@ async function me(request, env) {
   if (!uid) return json({ error: 'unauthorized' }, 401);
   await env.DB.prepare('UPDATE profiles SET last_active=? WHERE user_id=?').bind(Date.now(), uid).run();
   const u = await env.DB.prepare(
-    `SELECT u.id,u.email,u.plan,u.email_verified,p.display_name,p.gender,p.age,p.area,p.tagline,p.bio,p.verified,p.photo_key
+    `SELECT u.id,u.email,u.plan,u.email_verified,p.display_name,p.gender,p.age,p.area,p.tagline,p.bio,p.verified,p.photo_key,p.private_mode
      FROM users u LEFT JOIN profiles p ON p.user_id=u.id WHERE u.id=?`).bind(uid).first();
   if (u) {
     u.needs_onboarding = u.display_name ? 0 : 1;
@@ -196,7 +200,15 @@ async function listProfiles(request, env, url) {
   if (q.get('area'))   { where.push('area=?');   bind.push(q.get('area')); }
   if (q.get('min'))    { where.push('age>=?');   bind.push(Number(q.get('min'))); }
   if (q.get('max'))    { where.push('age<=?');   bind.push(Number(q.get('max'))); }
-  if (uid)             { where.push('user_id!=?'); bind.push(uid); }
+  if (uid) {
+    where.push('user_id!=?'); bind.push(uid);
+    where.push('NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=profiles.user_id) OR (b.blocker_id=profiles.user_id AND b.blocked_id=?))');
+    bind.push(uid, uid);
+    where.push('(private_mode=0 OR EXISTS (SELECT 1 FROM likes l WHERE l.from_id=profiles.user_id AND l.to_id=?))');
+    bind.push(uid);
+  } else {
+    where.push('private_mode=0');
+  }
   const limit = Math.min(Number(q.get('limit') || 24), 48), offset = Number(q.get('offset') || 0);
   const rows = await env.DB.prepare(
     `SELECT user_id,display_name,gender,age,area,tagline,photo_key,verified,last_active
@@ -242,7 +254,8 @@ async function likesReceived(request, env) {
      FROM likes l JOIN profiles p ON p.user_id = l.from_id
      WHERE l.to_id = ?
        AND NOT EXISTS (SELECT 1 FROM likes l2 WHERE l2.from_id = ? AND l2.to_id = l.from_id)
-     ORDER BY l.created_at DESC LIMIT 100`).bind(uid, uid).all();
+       AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=l.from_id) OR (b.blocker_id=l.from_id AND b.blocked_id=?))
+     ORDER BY l.created_at DESC LIMIT 100`).bind(uid, uid, uid, uid).all();
   return json({ items: rows.results });
 }
 
@@ -371,6 +384,51 @@ async function photoDelete(request, env) {
     const next = await env.DB.prepare('SELECT key FROM profile_photos WHERE user_id=? ORDER BY created_at ASC LIMIT 1').bind(uid).first();
     await env.DB.prepare('UPDATE profiles SET photo_key=? WHERE user_id=?').bind(next ? next.key : null, uid).run();
   }
+  return json({ ok: true });
+}
+
+async function block(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { target_id } = await request.json();
+  if (!target_id || target_id === uid) return json({ error: 'invalid' }, 400);
+  await env.DB.prepare('INSERT OR IGNORE INTO blocks (blocker_id,blocked_id,created_at) VALUES (?,?,?)')
+    .bind(uid, target_id, Date.now()).run();
+  const [a, b] = [uid, target_id].sort();
+  const mrow = await env.DB.prepare('SELECT id FROM matches WHERE a_id=? AND b_id=?').bind(a, b).first();
+  const ops = [env.DB.prepare('DELETE FROM likes WHERE (from_id=? AND to_id=?) OR (from_id=? AND to_id=?)').bind(uid, target_id, target_id, uid)];
+  if (mrow) {
+    ops.push(env.DB.prepare('DELETE FROM messages WHERE match_id=?').bind(mrow.id));
+    ops.push(env.DB.prepare('DELETE FROM reads WHERE match_id=?').bind(mrow.id));
+    ops.push(env.DB.prepare('DELETE FROM matches WHERE id=?').bind(mrow.id));
+  }
+  await env.DB.batch(ops);
+  return json({ ok: true });
+}
+
+async function unblock(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { target_id } = await request.json();
+  await env.DB.prepare('DELETE FROM blocks WHERE blocker_id=? AND blocked_id=?').bind(uid, target_id).run();
+  return json({ ok: true });
+}
+
+async function blocksList(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const rows = await env.DB.prepare(
+    `SELECT p.user_id,p.display_name,p.age,p.area,p.photo_key,b.created_at
+     FROM blocks b JOIN profiles p ON p.user_id=b.blocked_id
+     WHERE b.blocker_id=? ORDER BY b.created_at DESC`).bind(uid).all();
+  return json({ items: rows.results });
+}
+
+async function privacy(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { private_mode } = await request.json();
+  await env.DB.prepare('UPDATE profiles SET private_mode=? WHERE user_id=?').bind(private_mode ? 1 : 0, uid).run();
   return json({ ok: true });
 }
 

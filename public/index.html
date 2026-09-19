@@ -289,9 +289,15 @@ function renderProfile(p){
     <div class="meta">${gLabel[p.gender]||''}・${esc(p.area)} ${p.verified?'・<span style="color:var(--safe)">本人確認済み</span>':''}</div>
     ${p.tagline?`<p class="mincho" style="color:#6a5d64;margin:12px 0 4px">${esc(p.tagline)}</p>`:''}
     ${p.bio?`<p style="color:#5a5057;font-size:14px;white-space:pre-wrap;margin:8px 0 4px">${esc(p.bio)}</p>`:''}
-    ${me&&me.id===p.user_id?'':`<button class="solid full" id="likeBtn">いいねを送る</button>`}`;
+    ${me&&me.id===p.user_id?'':`<button class="solid full" id="likeBtn">いいねを送る</button>
+    <button class="ghost full" style="margin-top:6px;color:var(--muted)" onclick="blockFromProfile('${p.user_id}')">ブロックする</button>`}`;
   document.getElementById('pScrim').classList.add('on');
   const lb=document.getElementById('likeBtn'); if(lb) lb.onclick=()=>sendLike(p.user_id);
+}
+async function blockFromProfile(id){
+  if(!confirm('この相手をブロックしますか？今後お互いに表示されなくなります。'))return;
+  try{ await jpost('/block',{target_id:id}); document.getElementById('pScrim').classList.remove('on'); await loadProfiles(); await pollUnread(); toast('ブロックしました'); }
+  catch(e){ toast(e.message); }
 }
 async function sendLike(to){
   if(!me){closeModals();openAuth('signup');return;}
@@ -447,10 +453,12 @@ function buildChatMenu(){
   document.getElementById('chatMenu').innerHTML=`
     <button onclick="viewPartnerProfile()">プロフィールを見る</button>
     <button class="danger" onclick="doUnmatch()">マッチングを解除する</button>
+    <button class="danger" onclick="doBlock()">ブロックする</button>
     <button class="danger" onclick="doReport()">通報する</button>
     <button class="danger" onclick="enterSelect()">トークを選択して削除する</button>
     <button onclick="closeChatMenu()">キャンセル</button>`;
 }
+async function doBlock(){ closeChatMenu(); if(!chatState.partnerId)return; if(!confirm('この相手をブロックしますか？トーク履歴は削除され、今後お互いに表示されなくなります。'))return; try{await jpost('/block',{target_id:chatState.partnerId});toast('ブロックしました');await pollUnread();goMessages();}catch(e){toast(e.message);} }
 function openChatMenu(){ document.getElementById('chatMenuScrim').classList.add('on'); }
 function closeChatMenu(){ const s=document.getElementById('chatMenuScrim'); if(s)s.classList.remove('on'); }
 function viewPartnerProfile(){ closeChatMenu(); if(!chatState.partnerId)return; openProfileById(chatState.partnerId); }
@@ -545,7 +553,15 @@ function renderMyPage(pd,hint){
     <div class="field"><label>エリア</label><select id="myArea">${AREAS.map(a=>`<option${me.area===a?' selected':''}>${a}</option>`).join('')}</select></div>
     <div class="field"><label>一言コメント</label><input id="myTag" maxlength="120" value="${esc(me.tagline||'')}"></div>
     <div class="field"><label>自己紹介</label><textarea id="myBio" rows="4" maxlength="2000" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px;resize:vertical">${esc(me.bio||'')}</textarea></div>
-    <div class="err" id="myErr"></div>
+    <div style="margin-top:6px;padding:12px;border:1px solid var(--line);border-radius:10px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--ink)">
+        <input type="checkbox" id="myPrivate" ${me.private_mode?'checked':''} style="width:auto" onchange="togglePrivacy(this.checked)">
+        身バレ防止（プライベートモード）
+      </label>
+      <div class="note" style="margin-top:4px">ONにすると、あなたが「いいね」した相手にだけプロフィールが表示され、一覧・検索には出なくなります。</div>
+    </div>
+    <button class="ghost full" style="border:1px solid var(--line);margin-top:8px" onclick="openBlockList()">ブロックした人を管理</button>
+    <div class="err" id="myErr" style="margin-top:10px"></div>
     <button class="solid full" onclick="saveMyPage()">保存する</button>
     <button class="ghost full" style="margin-top:6px" onclick="document.getElementById('myScrim').classList.remove('on')">閉じる</button>`;
 }
@@ -565,6 +581,21 @@ async function saveMyPage(){
 }
 async function setMainPhoto(k){ try{await jpost('/photos/main',{key:k});await loadMe();const pd=await api('/photos/mine');renderMyPage(pd);await loadProfiles();toast('メイン写真を変更しました');}catch(e){toast(e.message);} }
 async function deletePhoto(k){ if(!confirm('この写真を削除しますか？'))return; try{await jpost('/photos/delete',{key:k});await loadMe();const pd=await api('/photos/mine');renderMyPage(pd);await loadProfiles();toast('写真を削除しました');}catch(e){toast(e.message);} }
+async function togglePrivacy(on){ try{await jpost('/privacy',{private_mode:on?1:0});me.private_mode=on?1:0;await loadProfiles();toast(on?'身バレ防止をONにしました':'身バレ防止をOFFにしました');}catch(e){toast(e.message);} }
+async function openBlockList(){
+  try{ const {items}=await api('/blocks');
+    const list=items.length?items.map(it=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">
+        <div style="width:42px;height:42px;border-radius:50%;overflow:hidden;position:relative;flex:none;display:grid;place-items:center;background:${grad(it.display_name)}">${avatarHTML(it)}</div>
+        <div style="flex:1;min-width:0"><b>${esc(it.display_name)}</b> ${it.age}<div class="meta" style="margin:0">${esc(it.area)}</div></div>
+        <button class="ghost" style="border:1px solid var(--line)" onclick="doUnblock('${it.user_id}')">解除</button>
+      </div>`).join(''):'<p class="note">ブロックした人はいません。</p>';
+    document.getElementById('pModal').innerHTML=`<h2 class="mincho">ブロックした人</h2><div style="margin-top:10px">${list}</div>
+      <button class="ghost full" style="margin-top:12px;border:1px solid var(--line)" onclick="document.getElementById('pScrim').classList.remove('on')">閉じる</button>`;
+    document.getElementById('pScrim').classList.add('on');
+  }catch(e){ toast(e.message); }
+}
+async function doUnblock(id){ try{await jpost('/unblock',{target_id:id});await loadProfiles();openBlockList();toast('ブロックを解除しました');}catch(e){toast(e.message);} }
 document.getElementById('verifyInput').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if(!f)return;
   if(f.size>8*1024*1024){toast('8MBまでにしてください');return;}
