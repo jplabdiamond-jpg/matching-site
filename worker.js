@@ -201,6 +201,9 @@ async function listProfiles(request, env, url) {
   if (q.get('area'))   { where.push('area=?');   bind.push(q.get('area')); }
   if (q.get('min'))    { where.push('age>=?');   bind.push(Number(q.get('min'))); }
   if (q.get('max'))    { where.push('age<=?');   bind.push(Number(q.get('max'))); }
+  if (q.get('q'))      { const kw = '%' + q.get('q').slice(0, 50) + '%'; where.push('(display_name LIKE ? OR tagline LIKE ? OR bio LIKE ?)'); bind.push(kw, kw, kw); }
+  if (q.get('verified') === '1') { where.push('verified=1'); }
+  if (q.get('online') === '1')   { where.push('last_active>?'); bind.push(Date.now() - 5 * 60000); }
   if (uid) {
     where.push('user_id!=?'); bind.push(uid);
     where.push('NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=profiles.user_id) OR (b.blocker_id=profiles.user_id AND b.blocked_id=?))');
@@ -211,9 +214,10 @@ async function listProfiles(request, env, url) {
     where.push('private_mode=0');
   }
   const limit = Math.min(Number(q.get('limit') || 24), 48), offset = Number(q.get('offset') || 0);
+  const order = q.get('sort') === 'new' ? 'created_at DESC' : 'last_active DESC';
   const rows = await env.DB.prepare(
     `SELECT user_id,display_name,gender,age,area,tagline,photo_key,verified,last_active
-     FROM profiles WHERE ${where.join(' AND ')} ORDER BY last_active DESC LIMIT ? OFFSET ?`)
+     FROM profiles WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ? OFFSET ?`)
     .bind(...bind, limit, offset).all();
   return json({ items: rows.results, offset, limit });
 }
