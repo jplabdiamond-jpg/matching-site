@@ -140,6 +140,23 @@
     .cmenu{top:auto;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));width:auto;border-radius:16px}
     .cmenu button{padding:17px;font-size:16px}
   }
+  .botnav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);display:none}
+  .botnav button{flex:1;background:transparent;border:none;border-radius:0;padding:8px 2px calc(8px + env(safe-area-inset-bottom));font-size:10.5px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+  .botnav .ic{font-size:19px;line-height:1}
+  .nbadge{position:absolute;top:4px;right:22%;min-width:15px;height:15px;padding:0 4px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:999px;display:none;place-items:center}
+  @media (max-width:640px){
+    #footBtn,#likesBtn,#msgBtn{display:none!important}
+    body.authed .botnav{display:flex}
+    body.authed{padding-bottom:62px}
+    .bar{gap:8px;padding:12px 14px}
+    .brand{font-size:19px}
+    .grid{grid-template-columns:repeat(2,1fr);gap:10px;padding:0 14px}
+    .filters{gap:8px;padding:0 14px}
+    .filters select,.filters input{min-width:0;font-size:13px;padding:8px 10px}
+    .filters #fQ{flex:1 1 100%}
+    .lead{padding:24px 16px 4px}
+    .ava .ini{font-size:36px}
+  }
   .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--anchor);color:#fff;padding:12px 22px;border-radius:999px;font-size:14px;opacity:0;transition:.3s;z-index:80;pointer-events:none;max-width:90vw}
   .toast.on{opacity:1}
 </style>
@@ -162,6 +179,13 @@
   <button onclick="enablePush()">端末通知をオンにする</button>
   <button onclick="doLogout()">ログアウト</button>
 </div>
+<nav class="botnav" id="botnav">
+  <button onclick="goHome()"><span class="ic">🔍</span>さがす</button>
+  <button onclick="openFootprints()"><span class="ic">👣</span>足あと<span class="nbadge" id="footBadgeB"></span></button>
+  <button onclick="openLikes()"><span class="ic">♡</span>いいね<span class="nbadge" id="likesBadgeB"></span></button>
+  <button onclick="navMessages()"><span class="ic">💬</span>トーク<span class="nbadge" id="msgBadgeB"></span></button>
+  <button onclick="me?openMyPage():openAuth('login')"><span class="ic">☰</span>マイページ</button>
+</nav>
 
 <main id="view-home">
   <section class="lead">
@@ -277,6 +301,7 @@ function renderAuthState(){
   document.getElementById('likesBtn').style.display=me?'':'none';
   document.getElementById('footBtn').style.display=me?'':'none';
   document.getElementById('signupBtn').textContent=me?`${me.display_name||'アカウント'} さん`:'はじめる';
+  document.body.classList.toggle('authed', !!me);
   document.body.classList.add('ready');
   if(me){ startUnreadPoll(); } else { stopUnreadPoll(); }
 }
@@ -624,7 +649,7 @@ async function pollUnread(){
     if(document.getElementById('view-messages').classList.contains('on')) loadConversations();
   }catch(e){}
 }
-function setBadge(id,n){ const b=document.getElementById(id); if(n>0){b.textContent=n>99?'99+':n;b.style.display='';}else b.style.display='none'; }
+function setBadge(id,n){ [id,id+'B'].forEach(x=>{const b=document.getElementById(x); if(!b)return; if(n>0){b.textContent=n>99?'99+':n;b.style.display='';}else b.style.display='none';}); }
 function startUnreadPoll(){ pollUnread(); if(!unreadTimer) unreadTimer=setInterval(pollUnread,15000); }
 function stopUnreadPoll(){ if(unreadTimer){clearInterval(unreadTimer);unreadTimer=null;} setBadge('msgBadge',0); setBadge('likesBadge',0); setBadge('footBadge',0); }
 function refreshLikeBadge(){ pollUnread(); }
