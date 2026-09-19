@@ -63,6 +63,13 @@ async function route(request, env, url, ctx) {
   if (p === '/api/vapid'           && m === 'GET')  return json({ publicKey: env.VAPID_PUBLIC_KEY || '' });
   if (p === '/api/push/subscribe'  && m === 'POST') return pushSubscribe(request, env);
   if (p === '/api/push/unsubscribe'&& m === 'POST') return pushUnsubscribe(request, env);
+  if (p === '/api/admin/check'          && m === 'GET')  return adminCheck(request, env);
+  if (p === '/api/admin/verifications'  && m === 'GET')  return adminVerifications(request, env);
+  if (p === '/api/admin/doc'            && m === 'GET')  return adminDoc(request, env, url);
+  if (p === '/api/admin/verify'         && m === 'POST') return adminVerify(request, env);
+  if (p === '/api/admin/reports'        && m === 'GET')  return adminReports(request, env);
+  if (p === '/api/admin/report/resolve' && m === 'POST') return adminReportResolve(request, env);
+  if (p === '/api/admin/ban'            && m === 'POST') return adminBan(request, env);
 
   // messaging
   if (p === '/api/messages' && m === 'GET')  return listMessages(request, env, url);
@@ -123,14 +130,17 @@ async function me(request, env) {
   if (!uid) return json({ error: 'unauthorized' }, 401);
   await env.DB.prepare('UPDATE profiles SET last_active=? WHERE user_id=?').bind(Date.now(), uid).run();
   const u = await env.DB.prepare(
-    `SELECT u.id,u.email,u.plan,u.email_verified,p.display_name,p.gender,p.age,p.area,p.tagline,p.bio,p.verified,p.photo_key,p.private_mode
+    `SELECT u.id,u.email,u.plan,u.email_verified,u.banned,u.is_admin,p.display_name,p.gender,p.age,p.area,p.tagline,p.bio,p.verified,p.photo_key,p.private_mode
      FROM users u LEFT JOIN profiles p ON p.user_id=u.id WHERE u.id=?`).bind(uid).first();
+  if (u && u.banned) return json({ banned: true });
   if (u) {
     u.needs_onboarding = u.display_name ? 0 : 1;
     const ph = await env.DB.prepare('SELECT key FROM profile_photos WHERE user_id=? ORDER BY created_at ASC').bind(uid).all();
     u.photos = ph.results.map(r => r.key);
     const tg = await env.DB.prepare('SELECT tag FROM profile_tags WHERE user_id=?').bind(uid).all();
     u.tags = tg.results.map(r => r.tag);
+    const vr = await env.DB.prepare('SELECT status FROM verifications WHERE user_id=?').bind(uid).first();
+    u.verification_status = u.verified ? 'approved' : (vr ? vr.status : 'none');
   }
   return json(u);
 }
@@ -217,6 +227,7 @@ async function listProfiles(request, env, url) {
   if (q.get('verified') === '1') { where.push('verified=1'); }
   if (q.get('online') === '1')   { where.push('last_active>?'); bind.push(Date.now() - 5 * 60000); }
   if (q.get('tag'))    { where.push('EXISTS (SELECT 1 FROM profile_tags t WHERE t.user_id=profiles.user_id AND t.tag=?)'); bind.push(q.get('tag')); }
+  where.push('NOT EXISTS (SELECT 1 FROM users us WHERE us.id=profiles.user_id AND us.banned=1)');
   if (uid) {
     const meRow = await env.DB.prepare('SELECT gender FROM profiles WHERE user_id=?').bind(uid).first();
     if (meRow?.gender === 'male') { where.push('gender=?'); bind.push('female'); }
@@ -244,6 +255,7 @@ async function listProfiles(request, env, url) {
 async function like(request, env, ctx) {
   const uid = await auth(request, env);
   if (!uid) return json({ error: 'unauthorized' }, 401);
+  if (await isBanned(env, uid)) return json({ error: 'アカウントが停止されています' }, 403);
   const { to_id } = await request.json();
   if (!to_id || to_id === uid) return json({ error: 'invalid target' }, 400);
   const now = Date.now();
@@ -280,6 +292,7 @@ async function likesReceived(request, env) {
      WHERE l.to_id = ?
        AND NOT EXISTS (SELECT 1 FROM likes l2 WHERE l2.from_id = ? AND l2.to_id = l.from_id)
        AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=l.from_id) OR (b.blocker_id=l.from_id AND b.blocked_id=?))
+       AND NOT EXISTS (SELECT 1 FROM users us WHERE us.id=l.from_id AND us.banned=1)
      ORDER BY l.created_at DESC LIMIT 100`).bind(uid, uid, uid, uid).all();
   return json({ items: rows.results });
 }
@@ -644,6 +657,80 @@ function b64url(str) { return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').
 function b64urlBytes(bytes) { let s = ''; for (const b of bytes) s += String.fromCharCode(b); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
 function b64urlToBytes(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
 
+// ---------- admin ----------
+async function isBanned(env, uid) {
+  const u = await env.DB.prepare('SELECT banned FROM users WHERE id=?').bind(uid).first();
+  return !!(u && u.banned);
+}
+async function requireAdmin(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return null;
+  const u = await env.DB.prepare('SELECT is_admin FROM users WHERE id=?').bind(uid).first();
+  return u && u.is_admin ? uid : null;
+}
+async function adminCheck(request, env) {
+  return json({ admin: !!(await requireAdmin(request, env)) });
+}
+async function adminVerifications(request, env) {
+  if (!(await requireAdmin(request, env))) return json({ error: 'forbidden' }, 403);
+  const rows = await env.DB.prepare(
+    `SELECT v.user_id,v.doc_key,v.status,v.created_at,p.display_name,p.gender,p.age,p.area
+     FROM verifications v JOIN profiles p ON p.user_id=v.user_id
+     WHERE v.status='pending' ORDER BY v.created_at ASC`).all();
+  return json({ items: rows.results });
+}
+async function adminDoc(request, env, url) {
+  if (!(await requireAdmin(request, env))) return new Response('forbidden', { status: 403 });
+  const key = url.searchParams.get('key') || '';
+  if (!key.startsWith('verify/')) return new Response('not found', { status: 404 });
+  const obj = await env.PHOTOS.get(key);
+  if (!obj) return new Response('not found', { status: 404 });
+  const h = new Headers();
+  h.set('Content-Type', obj.httpMetadata?.contentType || 'application/octet-stream');
+  h.set('Cache-Control', 'private, no-store');
+  return new Response(obj.body, { headers: h });
+}
+async function adminVerify(request, env) {
+  if (!(await requireAdmin(request, env))) return json({ error: 'forbidden' }, 403);
+  const { user_id, action } = await request.json();
+  if (!user_id) return json({ error: 'invalid' }, 400);
+  if (action === 'approve') {
+    await env.DB.batch([
+      env.DB.prepare("UPDATE verifications SET status='approved' WHERE user_id=?").bind(user_id),
+      env.DB.prepare('UPDATE profiles SET verified=1 WHERE user_id=?').bind(user_id),
+    ]);
+  } else {
+    await env.DB.prepare("UPDATE verifications SET status='rejected' WHERE user_id=?").bind(user_id).run();
+  }
+  return json({ ok: true });
+}
+async function adminReports(request, env) {
+  if (!(await requireAdmin(request, env))) return json({ error: 'forbidden' }, 403);
+  const rows = await env.DB.prepare(
+    `SELECT r.id,r.reporter_id,r.target_id,r.reason,r.created_at,
+       tp.display_name AS target_name, rp.display_name AS reporter_name,
+       (SELECT banned FROM users WHERE id=r.target_id) AS target_banned
+     FROM reports r
+     LEFT JOIN profiles tp ON tp.user_id=r.target_id
+     LEFT JOIN profiles rp ON rp.user_id=r.reporter_id
+     WHERE r.status='open' ORDER BY r.created_at DESC LIMIT 200`).all();
+  return json({ items: rows.results });
+}
+async function adminReportResolve(request, env) {
+  if (!(await requireAdmin(request, env))) return json({ error: 'forbidden' }, 403);
+  const { id } = await request.json();
+  if (!id) return json({ error: 'invalid' }, 400);
+  await env.DB.prepare("UPDATE reports SET status='resolved' WHERE id=?").bind(id).run();
+  return json({ ok: true });
+}
+async function adminBan(request, env) {
+  if (!(await requireAdmin(request, env))) return json({ error: 'forbidden' }, 403);
+  const { user_id, ban } = await request.json();
+  if (!user_id) return json({ error: 'invalid' }, 400);
+  await env.DB.prepare('UPDATE users SET banned=? WHERE id=?').bind(ban ? 1 : 0, user_id).run();
+  return json({ ok: true, banned: !!ban });
+}
+
 async function unmatch(request, env) {
   const uid = await auth(request, env);
   if (!uid) return json({ error: 'unauthorized' }, 401);
@@ -715,6 +802,7 @@ async function listMessages(request, env, url) {
 async function sendMessage(request, env, ctx) {
   const uid = await auth(request, env);
   if (!uid) return json({ error: 'unauthorized' }, 401);
+  if (await isBanned(env, uid)) return json({ error: 'アカウントが停止されています' }, 403);
   const u = await env.DB.prepare('SELECT plan FROM users WHERE id=?').bind(uid).first();
   if (!PLANS[u.plan]?.messaging)
     return json({ error: 'メッセージの送信はスタンダードプラン以上でご利用いただけます', upgrade: true }, 402);
