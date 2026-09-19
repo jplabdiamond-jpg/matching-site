@@ -220,9 +220,11 @@
 <div class="scrim" id="likesScrim"><div class="modal" id="likesModal"></div></div>
 <div class="scrim" id="onboardScrim"><div class="modal" id="onboardModal"></div></div>
 <div class="scrim" id="myScrim"><div class="modal" id="myModal"></div></div>
+<div class="scrim" id="galleryScrim"><div class="modal" id="galleryModal"></div></div>
 
 <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" style="display:none">
 <input type="file" id="verifyInput" accept="image/jpeg,image/png,image/webp,application/pdf" style="display:none">
+<input type="file" id="galleryInput" accept="image/jpeg,image/png,image/webp" style="display:none">
 <div class="toast" id="toast"></div>
 
 <script>
@@ -233,6 +235,7 @@ const grad=s=>GRAD[[...String(s)].reduce((a,c)=>a+c.charCodeAt(0),0)%GRAD.length
 const gLabel={female:'女性',male:'男性',other:'その他'};
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const photoURL=k=>'/api/photo?key='+encodeURIComponent(k);
+const galleryURL=k=>'/api/gallery/photo?key='+encodeURIComponent(k);
 let me=null, convMap={}, convTab='talk', chatState={matchId:null,after:0,timer:null}, unreadState={messages:0,likes:0,footprints:0}, unreadTimer=null, myTags=[], tagFilter=null;
 
 async function api(path,opts={}){
@@ -527,6 +530,7 @@ async function doSend(){
 /* ---- トークの ⋯ メニュー ---- */
 function buildChatMenu(){
   document.getElementById('chatMenu').innerHTML=`
+    <button onclick="openGallery()">ギャラリー（写真の公開/閲覧）</button>
     <button onclick="viewPartnerProfile()">プロフィールを見る</button>
     <button class="danger" onclick="doUnmatch()">マッチングを解除する</button>
     <button class="danger" onclick="doBlock()">ブロックする</button>
@@ -535,6 +539,43 @@ function buildChatMenu(){
     <button onclick="closeChatMenu()">キャンセル</button>`;
 }
 async function doBlock(){ closeChatMenu(); if(!chatState.partnerId)return; if(!confirm('この相手をブロックしますか？トーク履歴は削除され、今後お互いに表示されなくなります。'))return; try{await jpost('/block',{target_id:chatState.partnerId});toast('ブロックしました');await pollUnread();goMessages();}catch(e){toast(e.message);} }
+async function openGallery(){
+  closeChatMenu();
+  const partnerId=chatState.partnerId; if(!partnerId)return;
+  const partnerName=(convMap[chatState.matchId]||{}).name||'お相手';
+  let mine={items:[]}, status={shared:false}, view={shared:false,items:[]};
+  try{ [mine,status,view]=await Promise.all([
+    api('/gallery/mine'),
+    api('/gallery/status?with='+encodeURIComponent(partnerId)),
+    api('/gallery/view?user_id='+encodeURIComponent(partnerId))
+  ]); }catch(e){ toast(e.message); return; }
+  renderGallery(partnerName, mine, status, view);
+  document.getElementById('galleryScrim').classList.add('on');
+}
+function renderGallery(name, mine, status, view){
+  const grid=(keys,withDelete)=>keys.length?`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${keys.map(k=>`
+    <div style="position:relative"><img src="${galleryURL(k)}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px">${withDelete?`<button onclick="galleryRemovePhoto('${k}')" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);color:#fff;border:none;width:22px;height:22px;border-radius:50%;line-height:1;cursor:pointer">×</button>`:''}</div>`).join('')}</div>`:'<p class="note">写真がありません。</p>';
+  document.getElementById('galleryModal').innerHTML=`
+    <h2 class="mincho">ギャラリー</h2>
+    <p class="note" style="margin:4px 0 12px">マッチした相手だけに公開できる、特別なギャラリーです。</p>
+    <div style="font-size:13px;font-weight:600;margin:8px 0 6px">あなたのギャラリー（最大12枚）</div>
+    ${grid(mine.items,true)}
+    <button class="ghost full" style="border:1px solid var(--line);margin-top:8px" onclick="document.getElementById('galleryInput').click()">写真を追加</button>
+    <button class="${status.shared?'ghost':'solid'} full" style="margin-top:8px${status.shared?';border:1px solid var(--line)':''}" onclick="toggleGalleryShare(${status.shared?0:1})">${status.shared?'この相手に非公開にする':'この相手に公開する'}</button>
+    <div class="note" style="margin-top:4px">${status.shared?'現在、'+esc(name)+'さんに公開中です。':'公開すると、'+esc(name)+'さんがあなたのギャラリーを見られます。'}</div>
+    <div style="font-size:13px;font-weight:600;margin:18px 0 6px">${esc(name)}さんのギャラリー</div>
+    ${view.shared?grid(view.items,false):'<p class="note">まだ公開されていません。</p>'}
+    <button class="ghost full" style="margin-top:14px" onclick="document.getElementById('galleryScrim').classList.remove('on')">閉じる</button>`;
+}
+async function toggleGalleryShare(on){ try{ await jpost('/gallery/share',{to_id:chatState.partnerId,share:on?1:0}); toast(on?'この相手に公開しました':'非公開にしました'); await openGallery(); }catch(e){ toast(e.message); } }
+async function galleryRemovePhoto(k){ if(!confirm('この写真を削除しますか？'))return; try{ await jpost('/gallery/delete',{key:k}); await openGallery(); toast('削除しました'); }catch(e){ toast(e.message); } }
+document.getElementById('galleryInput').onchange=async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f)return;
+  if(f.size>5*1024*1024){toast('5MBまでにしてください');return;}
+  toast('アップロード中…');
+  try{ await api('/gallery/upload',{method:'POST',headers:{'Content-Type':f.type},body:f}); await openGallery(); toast('写真を追加しました'); }
+  catch(err){ toast(err.message); }
+};
 function openChatMenu(){ document.getElementById('chatMenuScrim').classList.add('on'); }
 function closeChatMenu(){ const s=document.getElementById('chatMenuScrim'); if(s)s.classList.remove('on'); }
 function viewPartnerProfile(){ closeChatMenu(); if(!chatState.partnerId)return; openProfileById(chatState.partnerId); }

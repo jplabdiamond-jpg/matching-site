@@ -53,6 +53,13 @@ async function route(request, env, url) {
   if (p === '/api/blocks'          && m === 'GET')  return blocksList(request, env);
   if (p === '/api/privacy'         && m === 'POST') return privacy(request, env);
   if (p === '/api/tags/set'        && m === 'POST') return tagsSet(request, env);
+  if (p === '/api/gallery/upload'  && m === 'POST') return galleryUpload(request, env);
+  if (p === '/api/gallery/mine'    && m === 'GET')  return galleryMine(request, env);
+  if (p === '/api/gallery/delete'  && m === 'POST') return galleryRemove(request, env);
+  if (p === '/api/gallery/share'   && m === 'POST') return galleryShare(request, env);
+  if (p === '/api/gallery/status'  && m === 'GET')  return galleryStatus(request, env, url);
+  if (p === '/api/gallery/view'    && m === 'GET')  return galleryView(request, env, url);
+  if (p === '/api/gallery/photo'   && m === 'GET')  return galleryPhoto(request, env, url);
 
   // messaging
   if (p === '/api/messages' && m === 'GET')  return listMessages(request, env, url);
@@ -481,6 +488,92 @@ async function tagsSet(request, env) {
   return json({ ok: true, tags: clean });
 }
 
+// ---------- gallery (per-match private) ----------
+async function galleryUpload(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const ct = request.headers.get('Content-Type') || '';
+  if (!EXT[ct]) return json({ error: 'JPEG / PNG / WebP のみ対応しています' }, 400);
+  const buf = await request.arrayBuffer();
+  if (buf.byteLength > 5 * 1024 * 1024) return json({ error: '5MBまでにしてください' }, 400);
+  const cnt = await env.DB.prepare('SELECT COUNT(*) AS c FROM gallery_photos WHERE user_id=?').bind(uid).first();
+  if ((cnt.c || 0) >= 12) return json({ error: 'ギャラリーは12枚までです' }, 400);
+  const key = `gallery/${uid}/${Date.now()}.${EXT[ct]}`;
+  await env.PHOTOS.put(key, buf, { httpMetadata: { contentType: ct } });
+  await env.DB.prepare('INSERT INTO gallery_photos (id,user_id,key,created_at) VALUES (?,?,?,?)').bind(uuid(), uid, key, Date.now()).run();
+  return json({ key });
+}
+
+async function galleryMine(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const rows = await env.DB.prepare('SELECT key FROM gallery_photos WHERE user_id=? ORDER BY created_at ASC').bind(uid).all();
+  return json({ items: rows.results.map(r => r.key) });
+}
+
+async function galleryRemove(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { key } = await request.json();
+  const own = await env.DB.prepare('SELECT 1 FROM gallery_photos WHERE user_id=? AND key=?').bind(uid, key).first();
+  if (!own) return json({ error: 'not found' }, 404);
+  await env.DB.prepare('DELETE FROM gallery_photos WHERE user_id=? AND key=?').bind(uid, key).run();
+  try { await env.PHOTOS.delete(key); } catch (e) {}
+  return json({ ok: true });
+}
+
+async function galleryShare(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { to_id, share } = await request.json();
+  if (!to_id) return json({ error: 'invalid' }, 400);
+  if (!(await areMatched(env, uid, to_id))) return json({ error: 'マッチした相手にのみ公開できます' }, 400);
+  if (share) {
+    await env.DB.prepare('INSERT OR IGNORE INTO gallery_shares (owner_id,viewer_id,created_at) VALUES (?,?,?)').bind(uid, to_id, Date.now()).run();
+  } else {
+    await env.DB.prepare('DELETE FROM gallery_shares WHERE owner_id=? AND viewer_id=?').bind(uid, to_id).run();
+  }
+  return json({ ok: true, shared: !!share });
+}
+
+async function galleryStatus(request, env, url) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const w = url.searchParams.get('with');
+  if (!w) return json({ error: 'invalid' }, 400);
+  const r = await env.DB.prepare('SELECT 1 FROM gallery_shares WHERE owner_id=? AND viewer_id=?').bind(uid, w).first();
+  return json({ shared: !!r });
+}
+
+async function galleryView(request, env, url) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const owner = url.searchParams.get('user_id');
+  if (!owner) return json({ error: 'invalid' }, 400);
+  const shared = await env.DB.prepare('SELECT 1 FROM gallery_shares WHERE owner_id=? AND viewer_id=?').bind(owner, uid).first();
+  if (!shared || !(await areMatched(env, uid, owner))) return json({ shared: false, items: [] });
+  const rows = await env.DB.prepare('SELECT key FROM gallery_photos WHERE user_id=? ORDER BY created_at ASC').bind(owner).all();
+  return json({ shared: true, items: rows.results.map(r => r.key) });
+}
+
+async function galleryPhoto(request, env, url) {
+  const uid = await auth(request, env);
+  const key = url.searchParams.get('key') || '';
+  if (!key.startsWith('gallery/')) return new Response('not found', { status: 404 });
+  if (!uid) return new Response('unauthorized', { status: 401 });
+  const owner = key.split('/')[1];
+  if (uid !== owner) {
+    const shared = await env.DB.prepare('SELECT 1 FROM gallery_shares WHERE owner_id=? AND viewer_id=?').bind(owner, uid).first();
+    if (!shared || !(await areMatched(env, uid, owner))) return new Response('forbidden', { status: 403 });
+  }
+  const obj = await env.PHOTOS.get(key);
+  if (!obj) return new Response('not found', { status: 404 });
+  const h = new Headers();
+  h.set('Content-Type', obj.httpMetadata?.contentType || 'application/octet-stream');
+  h.set('Cache-Control', 'private, max-age=300');
+  return new Response(obj.body, { headers: h });
+}
+
 async function unmatch(request, env) {
   const uid = await auth(request, env);
   if (!uid) return json({ error: 'unauthorized' }, 401);
@@ -525,6 +618,11 @@ async function matchMember(env, matchId, uid) {
   if (!row) return null;
   if (row.a_id !== uid && row.b_id !== uid) return null;
   return row;
+}
+async function areMatched(env, x, y) {
+  const [a, b] = [x, y].sort();
+  const r = await env.DB.prepare('SELECT 1 FROM matches WHERE a_id=? AND b_id=?').bind(a, b).first();
+  return !!r;
 }
 
 async function listMessages(request, env, url) {
