@@ -52,6 +52,7 @@ async function route(request, env, url) {
   if (p === '/api/unblock'         && m === 'POST') return unblock(request, env);
   if (p === '/api/blocks'          && m === 'GET')  return blocksList(request, env);
   if (p === '/api/privacy'         && m === 'POST') return privacy(request, env);
+  if (p === '/api/tags/set'        && m === 'POST') return tagsSet(request, env);
 
   // messaging
   if (p === '/api/messages' && m === 'GET')  return listMessages(request, env, url);
@@ -118,6 +119,8 @@ async function me(request, env) {
     u.needs_onboarding = u.display_name ? 0 : 1;
     const ph = await env.DB.prepare('SELECT key FROM profile_photos WHERE user_id=? ORDER BY created_at ASC').bind(uid).all();
     u.photos = ph.results.map(r => r.key);
+    const tg = await env.DB.prepare('SELECT tag FROM profile_tags WHERE user_id=?').bind(uid).all();
+    u.tags = tg.results.map(r => r.tag);
   }
   return json(u);
 }
@@ -204,6 +207,7 @@ async function listProfiles(request, env, url) {
   if (q.get('q'))      { const kw = '%' + q.get('q').slice(0, 50) + '%'; where.push('(display_name LIKE ? OR tagline LIKE ? OR bio LIKE ?)'); bind.push(kw, kw, kw); }
   if (q.get('verified') === '1') { where.push('verified=1'); }
   if (q.get('online') === '1')   { where.push('last_active>?'); bind.push(Date.now() - 5 * 60000); }
+  if (q.get('tag'))    { where.push('EXISTS (SELECT 1 FROM profile_tags t WHERE t.user_id=profiles.user_id AND t.tag=?)'); bind.push(q.get('tag')); }
   if (uid) {
     where.push('user_id!=?'); bind.push(uid);
     where.push('NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=profiles.user_id) OR (b.blocker_id=profiles.user_id AND b.blocked_id=?))');
@@ -331,6 +335,8 @@ async function profileOne(request, env, url) {
   let photos = ph.results.map(r => r.key);
   if (p.photo_key) photos = [p.photo_key, ...photos.filter(k => k !== p.photo_key)];
   p.photos = photos;
+  const tg = await env.DB.prepare('SELECT tag FROM profile_tags WHERE user_id=?').bind(id).all();
+  p.tags = tg.results.map(r => r.tag);
   return json(p);
 }
 
@@ -459,6 +465,20 @@ async function privacy(request, env) {
   const { private_mode } = await request.json();
   await env.DB.prepare('UPDATE profiles SET private_mode=? WHERE user_id=?').bind(private_mode ? 1 : 0, uid).run();
   return json({ ok: true });
+}
+
+async function tagsSet(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { tags } = await request.json();
+  if (!Array.isArray(tags)) return json({ error: 'invalid' }, 400);
+  const clean = [...new Set(tags.map(t => String(t).trim()).filter(t => t && t.length <= 20))].slice(0, 15);
+  await env.DB.prepare('DELETE FROM profile_tags WHERE user_id=?').bind(uid).run();
+  if (clean.length) {
+    await env.DB.batch(clean.map(t => env.DB.prepare('INSERT OR IGNORE INTO profile_tags (user_id,tag) VALUES (?,?)').bind(uid, t)));
+  }
+  await env.DB.prepare('UPDATE profiles SET last_active=? WHERE user_id=?').bind(Date.now(), uid).run();
+  return json({ ok: true, tags: clean });
 }
 
 async function unmatch(request, env) {
