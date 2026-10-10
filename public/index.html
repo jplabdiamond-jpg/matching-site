@@ -243,6 +243,26 @@
   }
   .toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);background:var(--anchor);color:#fff;padding:12px 22px;border-radius:999px;font-size:14px;opacity:0;transition:.3s;z-index:90;pointer-events:none;max-width:90vw}
   .toast.on{opacity:1}
+  /* --- bordeaux line icons --- */
+  .ic-svg{width:1.15em;height:1.15em;display:inline-block;vertical-align:-.22em;flex:none}
+  .pf-row .k{width:8.5em}
+  .pf-row .k .ic-svg{color:var(--anchor)}
+  .pf-sec h3 .ic-svg{color:var(--anchor);width:1.1em;height:1.1em;vertical-align:-.16em}
+  .botnav .ic .ic-svg{width:23px;height:23px}
+  .bell .ic-svg{width:22px;height:22px;vertical-align:-.3em}
+  .tgrid .ic-svg{width:22px;height:22px;color:var(--anchor)}
+  .chip .ic-svg{width:1em;height:1em;vertical-align:-.13em;color:var(--anchor)}
+  .mp-link .ic-svg,.secttl .ic-svg{color:var(--anchor)}
+  /* --- profile detail: centered column + portrait photo --- */
+  #view-profile .pbody{max-width:600px;margin:0 auto;width:100%}
+  .pf-hero{width:100%;max-width:340px;margin:16px auto 2px;aspect-ratio:4/5;max-height:none;border-radius:18px}
+  .pf-thumbs{justify-content:center}
+  .pf-actions{max-width:600px;margin:0 auto;background:linear-gradient(to top,var(--bg) 72%,transparent)}
+  /* keep the いいね button clear of the bottom nav */
+  body.authed #view-profile{bottom:calc(62px + env(safe-area-inset-bottom))}
+  /* --- other full pages: readable width on desktop --- */
+  .page .pbody.pad{max-width:660px;margin:0 auto;width:100%}
+  #view-messages .convlist{max-width:660px;margin:0 auto;width:100%}
 </style>
 </head>
 <body>
@@ -250,7 +270,7 @@
   <div class="bar">
     <div class="brand" onclick="goHome()" style="cursor:pointer">ソワレ<small>SOIRÉE MATCHING</small></div>
     <div class="spacer"></div>
-    <button class="bell" id="bellBtn" style="display:none" onclick="openNotice()">🔔<span class="hbadge" id="noticeBadge" style="display:none">0</span></button>
+    <button class="bell" id="bellBtn" style="display:none" onclick="openNotice()"><span data-ic="bell"></span><span class="hbadge" id="noticeBadge" style="display:none">0</span></button>
     <button class="hdname" id="hdAcct" style="display:none" onclick="openMyPagePage()"><span class="av" id="hdAv"></span><span id="hdNameTxt"></span></button>
     <button class="ghost" id="loginBtn">ログイン</button>
     <button class="solid" id="signupBtn">はじめる</button>
@@ -258,11 +278,11 @@
 </header>
 
 <nav class="botnav" id="botnav">
-  <button data-nav="home" onclick="goHome()"><span class="ic">🏠</span>おすすめ</button>
-  <button data-nav="search" onclick="openSearch()"><span class="ic">🔍</span>さがす</button>
-  <button data-nav="likes" onclick="openLikes()"><span class="ic">♡</span>相手から<span class="nbadge" id="likesBadgeB"></span></button>
-  <button data-nav="msg" onclick="navMessages()"><span class="ic">💬</span>トーク<span class="nbadge" id="msgBadgeB"></span></button>
-  <button data-nav="mypage" onclick="openMyPagePage()"><span class="ic">☰</span>マイページ</button>
+  <button data-nav="home" onclick="goHome()"><span class="ic" data-ic="home"></span>おすすめ</button>
+  <button data-nav="search" onclick="openSearch()"><span class="ic" data-ic="search"></span>さがす</button>
+  <button data-nav="likes" onclick="openLikes()"><span class="ic" data-ic="heart"></span>相手から<span class="nbadge" id="likesBadgeB"></span></button>
+  <button data-nav="msg" onclick="navMessages()"><span class="ic" data-ic="chat"></span>トーク<span class="nbadge" id="msgBadgeB"></span></button>
+  <button data-nav="mypage" onclick="openMyPagePage()"><span class="ic" data-ic="user"></span>マイページ</button>
 </nav>
 
 <main id="view-home">
@@ -366,6 +386,35 @@ const TAG_EMOJI={'カフェ巡り':'☕','映画':'🎬','音楽':'🎵','お酒
 const GRAD=['linear-gradient(135deg,#C56B72,#5C2A45)','linear-gradient(135deg,#7C6A9C,#3f3557)','linear-gradient(135deg,#5E7C6E,#37473f)','linear-gradient(135deg,#C98B6B,#7a4b34)','linear-gradient(135deg,#8C6B9C,#4a3557)','linear-gradient(135deg,#6B8CA0,#33505f)'];
 const grad=s=>GRAD[[...String(s)].reduce((a,c)=>a+c.charCodeAt(0),0)%GRAD.length];
 const gLabel={female:'女性',male:'男性',other:'その他'};
+const ICONS={
+  heart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8L12 21.2l8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/>',
+  ring:'<circle cx="12" cy="14.5" r="5.3"/><path d="M8.6 9 10 4.2h4L15.4 9"/>',
+  child:'<circle cx="12" cy="8" r="3.8"/><path d="M6.2 21c0-3.2 2.6-5.8 5.8-5.8s5.8 2.6 5.8 5.8"/>',
+  briefcase:'<rect x="2.6" y="7.6" width="18.8" height="12.8" rx="2"/><path d="M8.5 7.6V6a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v1.6"/><path d="M2.6 13h18.8"/>',
+  yen:'<circle cx="12" cy="12" r="8.6"/><path d="M8.4 8.2 12 12l3.6-3.8M12 12v5.6M9.6 14.2h4.8M9.6 16.4h4.8"/>',
+  cap:'<path d="M12 4 2.6 9 12 14l9.4-5L12 4z"/><path d="M6.6 11.3V16c0 1.3 2.4 2.6 5.4 2.6s5.4-1.3 5.4-2.6v-4.7"/>',
+  ruler:'<rect x="3" y="8.6" width="18" height="6.8" rx="1.2"/><path d="M7 8.6v2.5M11 8.6v3.3M15 8.6v2.5M19 8.6v3.3"/>',
+  body:'<circle cx="12" cy="5" r="2.3"/><path d="M12 7.3v7M12 14.3l-3.4 6M12 14.3l3.4 6M7.6 10.2h8.8"/>',
+  glass:'<path d="M7.6 3.6h8.8l-1 6.4a3.4 3.4 0 0 1-6.8 0l-1-6.4z"/><path d="M12 13.4v5.4M9.1 18.8h5.8"/>',
+  cigarette:'<rect x="2.6" y="13.6" width="13.6" height="3.4" rx="1"/><path d="M16.2 13.6v3.4M18.8 6.6c0 1.8-1.8 1.8-1.8 3.6M21.2 8.6c0 1.8-1.8 1.8-1.8 3.6"/>',
+  calendar:'<rect x="3.6" y="5" width="16.8" height="15.8" rx="2"/><path d="M16 3v4M8 3v4M3.6 10h16.8"/>',
+  pin:'<path d="M20 10c0 6-8 11.4-8 11.4S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.5"/>',
+  chat:'<path d="M20.5 11.3a7.9 7.9 0 0 1-8.5 8.2 8 8 0 0 1-3.6-.8L3.5 20l1.3-4.8a8 8 0 0 1-.8-3.6A7.9 7.9 0 0 1 11.7 3.3h.5a7.95 7.95 0 0 1 7.3 7.3v.7z"/>',
+  clock:'<circle cx="12" cy="12" r="8.4"/><path d="M12 7.2v5.2l3.2 1.9"/>',
+  clipboard:'<path d="M15.5 4.6H17a2 2 0 0 1 2 2V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6.6a2 2 0 0 1 2-2h1.5"/><rect x="8.5" y="2.9" width="7" height="3.5" rx="1"/><path d="M8.6 11h6.8M8.6 14.4h4.8"/>',
+  tag:'<path d="M20.2 13 13 20.2a2 2 0 0 1-2.8 0L3 13V3h10l7.2 7.2a2 2 0 0 1 0 2.8z"/><circle cx="7.3" cy="7.3" r="1.1"/>',
+  home:'<path d="M3.6 11 12 3.6 20.4 11"/><path d="M5.6 10v9.4a1 1 0 0 0 1 1H10V15h4v5.4h3.4a1 1 0 0 0 1-1V10"/>',
+  search:'<circle cx="11" cy="11" r="6.8"/><path d="m20.4 20.4-3.9-3.9"/>',
+  user:'<path d="M20 20.4V19a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v1.4"/><circle cx="12" cy="7.4" r="3.7"/>',
+  bell:'<path d="M18 8.5a6 6 0 0 0-12 0c0 6.4-2.7 8.4-2.7 8.4h17.4S18 14.9 18 8.5z"/><path d="M13.8 20.4a2 2 0 0 1-3.6 0"/>',
+  ban:'<circle cx="12" cy="12" r="8.6"/><path d="M5.9 5.9l12.2 12.2"/>',
+  card:'<rect x="2.6" y="5" width="18.8" height="14" rx="2.5"/><path d="M2.6 9.5h18.8M6 14.2h4"/>',
+  star:'<path d="M12 3.4l2.5 5.3 5.8.8-4.2 4.1 1 5.8L12 16.6 6.9 19.4l1-5.8-4.2-4.1 5.8-.8z"/>',
+  tool:'<path d="M14.6 6.6a3.6 3.6 0 0 1-4.8 4.8l-4.9 4.9a1.7 1.7 0 0 0 2.4 2.4l4.9-4.9a3.6 3.6 0 0 0 4.8-4.8l-2.1 2.1-2.1-.3-.3-2.1z"/>',
+  logout:'<path d="M9 21H5.5a2 2 0 0 1-2-2v-14a2 2 0 0 1 2-2H9"/><path d="M16 16.5l4.5-4.5L16 7.5M20.5 12H9"/>',
+  info:'<circle cx="12" cy="12" r="8.6"/><path d="M12 11v5M12 7.8h.01"/>'
+};
+function svg(name){ return `<svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]||''}</svg>`; }
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const photoURL=k=>'/api/photo?key='+encodeURIComponent(k);
 const galleryURL=k=>'/api/gallery/photo?key='+encodeURIComponent(k);
@@ -383,17 +432,17 @@ const OPT={
   holiday:['土日','平日','不定期','シフト制']
 };
 const ATTR_META=[
-  ['purpose','🍷','探している関係'],
-  ['marital','💍','婚姻状況'],
-  ['children','👶','子ども'],
-  ['job','💼','お仕事'],
-  ['income','💰','年収'],
-  ['education','🎓','最終学歴'],
-  ['height','📏','身長'],
-  ['body_type','🧍','体型'],
-  ['drinking','🍶','お酒'],
-  ['smoking','🚬','タバコ'],
-  ['holiday','📅','休日']
+  ['purpose','heart','探している関係'],
+  ['marital','ring','婚姻状況'],
+  ['children','child','子ども'],
+  ['job','briefcase','お仕事'],
+  ['income','yen','年収'],
+  ['education','cap','最終学歴'],
+  ['height','ruler','身長'],
+  ['body_type','body','体型'],
+  ['drinking','glass','お酒'],
+  ['smoking','cigarette','タバコ'],
+  ['holiday','calendar','休日']
 ];
 const SLOT_DT=[['wd','平日'],['we','土日祝']];
 const SLOT_TM=[['morning','朝'],['day','昼'],['evening','夜'],['late','深夜']];
@@ -499,7 +548,7 @@ window.addEventListener('scroll',()=>{
 function renderTagBar(){
   const b=document.getElementById('tagFilterBar');
   if(!tagFilter){ b.style.display='none'; b.innerHTML=''; return; }
-  b.style.display=''; b.innerHTML=`<span class="chip common">${TAG_EMOJI[tagFilter]||'#'} ${esc(tagFilter)} <span onclick="clearTagFilter()" style="cursor:pointer">✕</span></span>`;
+  b.style.display=''; b.innerHTML=`<span class="chip common">${svg('tag')} ${esc(tagFilter)} <span onclick="clearTagFilter()" style="cursor:pointer">✕</span></span>`;
 }
 function setTagFilter(t){ tagFilter=t; renderTagBar(); loadProfiles(true); window.scrollTo(0,0); }
 function clearTagFilter(){ tagFilter=null; renderTagBar(); loadProfiles(true); }
@@ -535,7 +584,7 @@ function renderSearch(){
       </div>
     </div>
     <div class="fblock"><div class="fl">やりたいこと・興味でさがす</div>
-      <div class="tgrid">${PRESET_TAGS.map(t=>`<button onclick="filterByTag('${t}')"><span class="em">${TAG_EMOJI[t]||'#'}</span>${esc(t)}</button>`).join('')}</div>
+      <div class="tgrid">${PRESET_TAGS.map(t=>`<button onclick="filterByTag('${t}')"><span class="em">${svg('tag')}</span>${esc(t)}</button>`).join('')}</div>
     </div>
     <button class="solid full" style="margin-top:4px" onclick="applySearch()">この条件でさがす</button>`;
 }
@@ -571,29 +620,29 @@ function renderProfile(p){
     ? `<div class="pf-thumbs">${photos.map((k,i)=>`<img class="${i===0?'sel':''}" src="${photoURL(k)}" onclick="pfSwap('${photoURL(k)}',this)">`).join('')}</div>`
     : '';
   // 自己紹介
-  const bioSec=p.bio?`<div class="pf-sec"><h3>💬 自己紹介</h3><p class="pf-bio">${esc(p.bio)}</p></div>`:'';
+  const bioSec=p.bio?`<div class="pf-sec"><h3>${svg('chat')} 自己紹介</h3><p class="pf-bio">${esc(p.bio)}</p></div>`:'';
   // 都合の良い時間帯
   const avail=(p.avail||'').split(',').filter(Boolean);
   let slotSec='';
   if(avail.length){
     let rows=SLOT_DT.map(([dt,dl])=>`<div class="rl">${dl}</div>`+SLOT_TM.map(([tm])=>`<div class="slotcell ${avail.includes(dt+'_'+tm)?'on':''}">${avail.includes(dt+'_'+tm)?'◯':''}</div>`).join('')).join('');
-    slotSec=`<div class="pf-sec"><h3>🕒 都合の良い時間帯</h3>
+    slotSec=`<div class="pf-sec"><h3>${svg('clock')} 都合の良い時間帯</h3>
       <div class="slotgrid"><div></div>${SLOT_TM.map(([,l])=>`<div class="hd">${l}</div>`).join('')}${rows}</div></div>`;
   }
   // 属性行
   const rows=ATTR_META.map(([key,ic,label])=>{
     const v=attrVal(p,key);
-    return `<div class="pf-row"><div class="k">${ic} ${label}</div><div class="v ${v?'':'na'}">${v?esc(v):'未設定'}</div></div>`;
+    return `<div class="pf-row"><div class="k">${svg(ic)} ${label}</div><div class="v ${v?'':'na'}">${v?esc(v):'未設定'}</div></div>`;
   }).join('');
-  const attrSec=`<div class="pf-sec"><h3>📋 基本情報</h3><div class="pf-rows">
-    <div class="pf-row"><div class="k">📍 エリア</div><div class="v">${esc(p.area||'')}</div></div>
+  const attrSec=`<div class="pf-sec"><h3>${svg('clipboard')} 基本情報</h3><div class="pf-rows">
+    <div class="pf-row"><div class="k">${svg('pin')} エリア</div><div class="v">${esc(p.area||'')}</div></div>
     ${rows}</div></div>`;
   // タグ
-  const tagSec=(p.tags&&p.tags.length)?`<div class="pf-sec"><h3>🏷️ 興味・関心</h3><div class="tagwrap">${p.tags.map(t=>`<span class="chip ${me&&me.tags&&me.tags.includes(t)?'common':''}" onclick="filterByTag('${t}')">${TAG_EMOJI[t]?TAG_EMOJI[t]+' ':''}${esc(t)}</span>`).join('')}</div></div>`:'';
+  const tagSec=(p.tags&&p.tags.length)?`<div class="pf-sec"><h3>${svg('tag')} 興味・関心</h3><div class="tagwrap">${p.tags.map(t=>`<span class="chip ${me&&me.tags&&me.tags.includes(t)?'common':''}" onclick="filterByTag('${t}')">${esc(t)}</span>`).join('')}</div></div>`:'';
   const own=me&&me.id===p.user_id;
   const actions=own?'':`<div class="pf-actions">
-      <button class="mini" onclick="blockFromProfile('${p.user_id}')" title="ブロック">🚫</button>
-      <button class="like" id="likeBtn">♡ いいねを送る</button>
+      <button class="mini" onclick="blockFromProfile('${p.user_id}')" title="ブロック">${svg('ban')}</button>
+      <button class="like" id="likeBtn">${svg('heart')} いいねを送る</button>
     </div>`;
   document.getElementById('profileBody').innerHTML=`
     <div class="pf-hero">${hero}${act}${vb}</div>
@@ -604,6 +653,7 @@ function renderProfile(p){
     <div style="height:8px"></div>
     ${actions}`;
   openPage('view-profile');
+  document.getElementById('profileBody').scrollTop=0;
   const lb=document.getElementById('likeBtn'); if(lb) lb.onclick=()=>sendLike(p.user_id);
 }
 function pfSwap(src,el){ const m=document.getElementById('pfMain'); if(m)m.src=src; document.querySelectorAll('.pf-thumbs img').forEach(i=>i.classList.remove('sel')); el.classList.add('sel'); }
@@ -733,13 +783,13 @@ async function renderMyPagePage(){
       <button class="solid full" style="margin:0" onclick="openUpgrade()">プランを見る</button>
     </div>`:''}
 
-    <button class="mp-link" onclick="pickVerify()"><span class="ic">🪪</span>本人確認<span class="ar">${vlabel} ›</span></button>
-    <button class="mp-link" onclick="enablePush()"><span class="ic">🔔</span>端末通知をオンにする<span class="ar">›</span></button>
-    <button class="mp-link" onclick="openUpgrade()"><span class="ic">✨</span>プラン・料金<span class="ar">›</span></button>
-    <button class="mp-link" onclick="openBlockList()"><span class="ic">🚫</span>ブロックした人を管理<span class="ar">›</span></button>
-    <button class="mp-link" onclick="openNotice()"><span class="ic">📣</span>お知らせ<span class="ar">›</span></button>
-    ${me.is_admin?`<button class="mp-link" onclick="location.href='/admin.html'"><span class="ic">🛠️</span>管理画面<span class="ar">›</span></button>`:''}
-    <button class="mp-link" onclick="doLogout()"><span class="ic">↩️</span>ログアウト<span class="ar">›</span></button>
+    <button class="mp-link" onclick="pickVerify()"><span class="ic">${svg('card')}</span>本人確認<span class="ar">${vlabel} ›</span></button>
+    <button class="mp-link" onclick="enablePush()"><span class="ic">${svg('bell')}</span>端末通知をオンにする<span class="ar">›</span></button>
+    <button class="mp-link" onclick="openUpgrade()"><span class="ic">${svg('star')}</span>プラン・料金<span class="ar">›</span></button>
+    <button class="mp-link" onclick="openBlockList()"><span class="ic">${svg('ban')}</span>ブロックした人を管理<span class="ar">›</span></button>
+    <button class="mp-link" onclick="openNotice()"><span class="ic">${svg('info')}</span>お知らせ<span class="ar">›</span></button>
+    ${me.is_admin?`<button class="mp-link" onclick="location.href='/admin.html'"><span class="ic">${svg('tool')}</span>管理画面<span class="ar">›</span></button>`:''}
+    <button class="mp-link" onclick="doLogout()"><span class="ic">${svg('logout')}</span>ログアウト<span class="ar">›</span></button>
     <p class="note" style="text-align:center">ソワレ / SOIRÉE MATCHING</p>`;
 }
 
@@ -1064,7 +1114,7 @@ function toggleSlot(el){ el.classList.toggle('on'); el.textContent=el.classList.
 function collectAvail(){ return [...document.querySelectorAll('#slotEditor .slotcell.on')].map(c=>c.dataset.code).join(','); }
 function renderTags(){
   const area=document.getElementById('tagArea'); if(!area)return;
-  const preset=PRESET_TAGS.map(t=>`<span class="chip ${myTags.includes(t)?'on':''}" onclick="toggleTag('${t}')">${TAG_EMOJI[t]?TAG_EMOJI[t]+' ':''}${t}</span>`).join('');
+  const preset=PRESET_TAGS.map(t=>`<span class="chip ${myTags.includes(t)?'on':''}" onclick="toggleTag('${t}')">${t}</span>`).join('');
   const custom=myTags.filter(t=>!PRESET_TAGS.includes(t)).map(t=>`<span class="chip on" onclick="toggleTag('${t}')">${esc(t)} ✕</span>`).join('');
   area.innerHTML=`<div style="margin-bottom:8px">${preset}${custom}</div>
     <div style="display:flex;gap:8px"><input id="tagInput" placeholder="自由に追加" maxlength="20" style="flex:1;padding:9px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px"><button class="ghost" style="border:1px solid var(--line)" onclick="addCustomTag()">追加</button></div>`;
@@ -1203,6 +1253,7 @@ document.getElementById('chatMenuBtn').onclick=openChatMenu;
 document.getElementById('chatMenuScrim').onclick=e=>{ if(e.target.id==='chatMenuScrim') closeChatMenu(); };
 document.getElementById('msgs').addEventListener('click',e=>{ if(!selecting)return; const w=e.target.closest('.bwrap.me'); if(!w)return; w.classList.toggle('sel'); updateSelCnt(); });
 
+document.querySelectorAll('[data-ic]').forEach(e=>e.innerHTML=svg(e.dataset.ic));
 (async()=>{
   await loadMe(); loadProfiles();
   if(me && me.needs_onboarding) openOnboard();
