@@ -130,7 +130,8 @@ async function me(request, env) {
   if (!uid) return json({ error: 'unauthorized' }, 401);
   await env.DB.prepare('UPDATE profiles SET last_active=? WHERE user_id=?').bind(Date.now(), uid).run();
   const u = await env.DB.prepare(
-    `SELECT u.id,u.email,u.plan,u.email_verified,u.banned,u.is_admin,p.display_name,p.gender,p.age,p.area,p.tagline,p.bio,p.verified,p.photo_key,p.private_mode
+    `SELECT u.id,u.email,u.plan,u.email_verified,u.banned,u.is_admin,p.display_name,p.gender,p.age,p.area,p.tagline,p.bio,p.verified,p.photo_key,p.private_mode,
+            p.marital,p.children,p.job,p.income,p.education,p.height,p.body_type,p.drinking,p.smoking,p.holiday,p.avail,p.purpose
      FROM users u LEFT JOIN profiles p ON p.user_id=u.id WHERE u.id=?`).bind(uid).first();
   if (u && u.banned) return json({ banned: true });
   if (u) {
@@ -351,7 +352,9 @@ async function profileOne(request, env, url) {
   const id = url.searchParams.get('user_id');
   if (!id) return json({ error: 'invalid' }, 400);
   const p = await env.DB.prepare(
-    'SELECT user_id,display_name,gender,age,area,tagline,bio,photo_key,verified,last_active FROM profiles WHERE user_id=?')
+    `SELECT user_id,display_name,gender,age,area,tagline,bio,photo_key,verified,last_active,
+            marital,children,job,income,education,height,body_type,drinking,smoking,holiday,avail,purpose
+     FROM profiles WHERE user_id=?`)
     .bind(id).first();
   if (!p) return json({ error: 'not found' }, 404);
   if (uid && uid !== id) {
@@ -393,6 +396,10 @@ async function profileUpdate(request, env) {
   if (b.area != null) { fields.push('area=?'); vals.push(String(b.area)); }
   if (b.gender != null) { fields.push('gender=?'); vals.push(String(b.gender)); }
   if (b.age != null) { const a = Number(b.age); if (!(a >= 18)) return json({ error: '18歳以上で入力してください' }, 400); fields.push('age=?'); vals.push(a); }
+  for (const col of ['marital','children','job','income','education','body_type','drinking','smoking','holiday','avail','purpose']) {
+    if (b[col] != null) { fields.push(col + '=?'); vals.push(String(b[col]).slice(0, 200)); }
+  }
+  if (b.height != null) { const h = Number(b.height); fields.push('height=?'); vals.push(h > 0 ? Math.min(h, 250) : null); }
   if (!fields.length) return json({ error: '変更がありません' }, 400);
   fields.push('last_active=?'); vals.push(Date.now());
   await env.DB.prepare(`UPDATE profiles SET ${fields.join(',')} WHERE user_id=?`).bind(...vals, uid).run();

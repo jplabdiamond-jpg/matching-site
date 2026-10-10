@@ -15,55 +15,64 @@
   :root{
     --bg:#FBF6F4; --surface:#fff; --ink:#2C2430; --muted:#8A7F86;
     --anchor:#5C2A45; --accent:#C56B72; --safe:#5E7C6E; --line:#EBE1DE;
+    --soft:#F3E9E7; --soft2:#EFE4E8;
     --shadow:0 1px 2px rgba(44,36,48,.05), 0 8px 24px rgba(92,42,69,.06);
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans JP",sans-serif;-webkit-font-smoothing:antialiased;line-height:1.7}
   .mincho{font-family:"Shippori Mincho",serif}
-  header{position:sticky;top:0;z-index:20;background:rgba(251,246,244,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-  .bar{max-width:1080px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:10px}
-  .brand{font-family:"Shippori Mincho",serif;font-weight:600;font-size:22px;letter-spacing:.14em;color:var(--anchor)}
-  .brand small{display:block;font-family:"Noto Sans JP";font-weight:400;font-size:10px;letter-spacing:.24em;color:var(--muted);margin-top:2px}
+  header{position:sticky;top:0;z-index:20;background:rgba(251,246,244,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .bar{max-width:1080px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;gap:10px}
+  .brand{font-family:"Shippori Mincho",serif;font-weight:600;font-size:21px;letter-spacing:.14em;color:var(--anchor)}
+  .brand small{display:block;font-family:"Noto Sans JP";font-weight:400;font-size:9.5px;letter-spacing:.24em;color:var(--muted);margin-top:1px}
   .spacer{flex:1}
   button{font-family:inherit;cursor:pointer;border:none;border-radius:999px;font-size:14px}
   .ghost{background:transparent;color:var(--anchor);padding:9px 14px;position:relative}
-  .ghost:hover{background:#F3E9E7}
+  .ghost:hover{background:var(--soft)}
   .solid{background:var(--anchor);color:#fff;padding:9px 20px}
   .solid:hover{background:#4a2138}
-  body:not(.ready) #loginBtn, body:not(.ready) #signupBtn, body:not(.ready) #msgBtn, body:not(.ready) #likesBtn, body:not(.ready) #footBtn{visibility:hidden}
+  .bell{background:transparent;color:var(--anchor);font-size:21px;padding:4px 8px;position:relative;line-height:1}
+  .bell .hbadge{position:absolute;top:0;right:0}
+  .hdname{display:flex;align-items:center;gap:8px;background:var(--soft);color:var(--anchor);padding:5px 12px 5px 6px;border-radius:999px;font-size:13px;font-weight:500}
+  .hdname .av{width:26px;height:26px;border-radius:50%;overflow:hidden;position:relative;display:grid;place-items:center;flex:none}
+  .hdname .av img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+  .hdname .av .ini{font-family:"Shippori Mincho",serif;color:#fff;font-size:13px}
+  body:not(.ready) #loginBtn, body:not(.ready) #signupBtn, body:not(.ready) #hdAcct, body:not(.ready) #bellBtn{visibility:hidden}
   .odot{position:absolute;top:10px;right:10px;width:12px;height:12px;border-radius:50%;background:#3fb27f;border:2px solid #fff;z-index:2}
   .online{color:#3fb27f;font-weight:500}
   .chip{display:inline-block;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;margin:0 6px 6px 0;cursor:pointer;background:#fff;color:var(--ink)}
   .chip.on{background:var(--anchor);color:#fff;border-color:var(--anchor)}
-  .chip.common{background:#EFE4E8;border-color:var(--accent);color:var(--anchor);font-weight:500}
-  .hbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:5px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;vertical-align:middle}
-  .lead{max-width:1080px;margin:0 auto;padding:40px 20px 8px}
-  .lead h1{font-family:"Shippori Mincho",serif;font-weight:500;font-size:clamp(26px,4.4vw,40px);line-height:1.5;margin:0 0 12px;color:var(--anchor)}
-  .lead p{max-width:34em;color:var(--muted);margin:0}
-  .filters{max-width:1080px;margin:24px auto 0;padding:0 20px;display:flex;flex-wrap:wrap;gap:10px}
-  .filters select{font-family:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);min-width:120px}
-  .grid{max-width:1080px;margin:20px auto 80px;padding:0 20px;display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  .chip.common{background:var(--soft2);border-color:var(--accent);color:var(--anchor);font-weight:500}
+  .hbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;vertical-align:middle}
+  .lead{max-width:1080px;margin:0 auto;padding:30px 20px 4px}
+  .lead h1{font-family:"Shippori Mincho",serif;font-weight:500;font-size:clamp(22px,4vw,34px);line-height:1.5;margin:0 0 10px;color:var(--anchor)}
+  .lead p{max-width:34em;color:var(--muted);margin:0;font-size:14px}
+  .secttl{max-width:1080px;margin:26px auto 0;padding:0 20px;display:flex;align-items:baseline;gap:10px}
+  .secttl h2{font-family:"Shippori Mincho",serif;font-weight:500;font-size:18px;color:var(--anchor);margin:0}
+  .secttl .sub{font-size:12px;color:var(--muted)}
+  .grid{max-width:1080px;margin:14px auto 30px;padding:0 20px;display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:transform .18s ease}
   .card:hover{transform:translateY(-3px)}
   .ava{aspect-ratio:4/5;display:grid;place-items:center;position:relative;overflow:hidden}
   .ava .ini{font-family:"Shippori Mincho",serif;font-size:44px;color:rgba(255,255,255,.92)}
   .ava img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
   .badge{position:absolute;top:10px;left:10px;background:var(--safe);color:#fff;font-size:11px;padding:3px 9px;border-radius:999px;letter-spacing:.04em;z-index:2}
-  .info{padding:12px 14px 15px}
+  .nbadge2{position:absolute;top:10px;right:10px;background:var(--accent);color:#fff;font-size:10px;padding:3px 8px;border-radius:999px;z-index:2}
+  .info{padding:11px 13px 14px}
   .name{font-weight:500;font-size:16px}.name b{font-weight:700}
-  .meta{color:var(--muted);font-size:13px;margin:2px 0 8px}
-  .tag{font-family:"Shippori Mincho",serif;font-size:13.5px;color:#6a5d64;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
+  .meta{color:var(--muted);font-size:13px;margin:2px 0 7px}
+  .tag{font-family:"Shippori Mincho",serif;font-size:13px;color:#6a5d64;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
   /* modals */
   .scrim{position:fixed;inset:0;background:rgba(44,36,48,.5);backdrop-filter:blur(2px);display:none;place-items:center;z-index:70;padding:20px}
   .scrim.on{display:grid}
-  .modal{background:var(--surface);border-radius:20px;max-width:440px;width:100%;padding:26px;box-shadow:0 20px 60px rgba(44,36,48,.25);max-height:86vh;overflow:auto}
+  .modal{background:var(--surface);border-radius:20px;max-width:460px;width:100%;padding:26px;box-shadow:0 20px 60px rgba(44,36,48,.25);max-height:88vh;overflow:auto}
   .modal h2{font-family:"Shippori Mincho",serif;font-weight:500;margin:0 0 4px;color:var(--anchor)}
   .big{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;margin:6px 0 14px;overflow:hidden;position:relative}
   .big .ini{font-family:"Shippori Mincho",serif;font-size:38px;color:#fff}
   .big img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
   .field{display:block;margin:10px 0}
   .field label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
-  .field input,.field select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px}
+  .field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px;background:#fff;color:var(--ink)}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .full{width:100%;padding:13px;margin-top:14px;font-size:15px}
   .err{color:#b0475a;font-size:13px;min-height:1.2em;margin-top:6px}
@@ -74,13 +83,9 @@
   .gbtn:hover{background:#faf5f4}
   .divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;margin:16px 0}
   .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
-  .menu{position:absolute;top:56px;right:20px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:6px;z-index:30;display:none;min-width:200px}
-  .menu.on{display:block}
-  .menu button{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);padding:10px 14px;border-radius:10px;font-size:14px}
-  .menu button:hover{background:#F3E9E7}
   /* likes cards */
-  .lcard{display:flex;gap:12px;padding:10px;border:1px solid var(--line);border-radius:14px;margin-bottom:10px;box-shadow:var(--shadow)}
-  .lcard .lav{width:70px;height:88px;border-radius:10px;overflow:hidden;position:relative;flex:none;display:grid;place-items:center}
+  .lcard{display:flex;gap:12px;padding:10px;border:1px solid var(--line);border-radius:14px;margin-bottom:10px;box-shadow:var(--shadow);background:var(--surface)}
+  .lcard .lav{width:72px;height:90px;border-radius:10px;overflow:hidden;position:relative;flex:none;display:grid;place-items:center;cursor:pointer}
   .lcard .lav .ini{font-family:"Shippori Mincho",serif;font-size:30px;color:#fff}
   .lcard .lav img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
   .lcard .lbody{flex:1;min-width:0}
@@ -92,6 +97,8 @@
   .pbar{display:flex;align-items:center;gap:10px;padding:14px 16px;padding-top:max(14px,env(safe-area-inset-top));border-bottom:1px solid var(--line);background:var(--surface)}
   .pbar .back{font-size:22px;color:var(--anchor);background:transparent;padding:2px 8px;line-height:1}
   .pbar h2{font-family:"Shippori Mincho",serif;font-weight:500;font-size:19px;color:var(--anchor);margin:0}
+  .pbody{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
+  .pbody.pad{padding:16px;padding-bottom:84px}
   .tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--line)}
   .tabs button{flex:1;background:transparent;color:var(--muted);padding:12px;border-radius:0;font-size:14px;font-weight:500;border-bottom:2px solid transparent}
   .tabs button.active{color:var(--anchor);border-bottom-color:var(--anchor)}
@@ -140,74 +147,153 @@
     .cmenu{top:auto;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));width:auto;border-radius:16px}
     .cmenu button{padding:17px;font-size:16px}
   }
-  .botnav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);display:none}
-  .botnav button{flex:1;background:transparent;border:none;border-radius:0;padding:8px 2px calc(8px + env(safe-area-inset-bottom));font-size:10.5px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
-  .botnav .ic{font-size:19px;line-height:1}
-  .nbadge{position:absolute;top:4px;right:22%;min-width:15px;height:15px;padding:0 4px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:999px;display:none;place-items:center}
+  /* bottom nav (5 tabs) */
+  .botnav{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--surface);border-top:1px solid var(--line);display:none}
+  body.authed .botnav{display:flex}
+  .botnav button{flex:1;background:transparent;border:none;border-radius:0;padding:7px 2px calc(7px + env(safe-area-inset-bottom));font-size:10px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+  .botnav button.active{color:var(--anchor)}
+  .botnav .ic{font-size:20px;line-height:1}
+  .nbadge{position:absolute;top:2px;right:22%;min-width:15px;height:15px;padding:0 4px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:999px;display:none;place-items:center}
+  body.authed{padding-bottom:62px}
+  body.authed .page .pbody.pad{padding-bottom:84px}
+  /* profile detail (cad-style) */
+  .pf-hero{position:relative;width:100%;aspect-ratio:1/1;max-height:460px;background:var(--line);overflow:hidden;border-radius:0}
+  .pf-hero img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+  .pf-hero .ini{position:absolute;inset:0;display:grid;place-items:center;font-family:"Shippori Mincho",serif;font-size:72px;color:#fff}
+  .pf-active{position:absolute;top:12px;left:12px;background:rgba(44,36,48,.55);color:#fff;font-size:12px;padding:5px 11px;border-radius:999px;display:flex;align-items:center;gap:6px;z-index:2}
+  .pf-active .dot{width:8px;height:8px;border-radius:50%;background:#3fb27f}
+  .pf-vbadge{position:absolute;top:12px;right:12px;background:var(--safe);color:#fff;font-size:11px;padding:4px 10px;border-radius:999px;z-index:2}
+  .pf-thumbs{display:flex;gap:8px;padding:10px 16px 0;overflow-x:auto}
+  .pf-thumbs img{width:54px;height:54px;object-fit:cover;border-radius:8px;cursor:pointer;flex:none;border:2px solid transparent}
+  .pf-thumbs img.sel{border-color:var(--accent)}
+  .pf-sec{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 16px 0}
+  .pf-sec h3{font-family:"Shippori Mincho",serif;font-weight:500;font-size:15px;color:var(--anchor);margin:0 0 10px;display:flex;align-items:center;gap:7px}
+  .pf-name{font-family:"Shippori Mincho",serif;font-size:24px;color:var(--ink);margin:0}
+  .pf-name span{font-size:17px;color:var(--muted);margin-left:6px}
+  .pf-bio{color:#5a5057;font-size:14.5px;white-space:pre-wrap;line-height:1.85;margin:0}
+  .pf-rows{display:grid;gap:0}
+  .pf-row{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .pf-row:last-child{border-bottom:none}
+  .pf-row .k{color:var(--muted);width:7.5em;flex:none;display:flex;align-items:center;gap:6px}
+  .pf-row .v{color:var(--ink);flex:1}
+  .pf-row .v.na{color:#c3b8bd}
+  .slotgrid{display:grid;grid-template-columns:auto repeat(4,1fr);gap:6px;font-size:12.5px}
+  .slotgrid .hd{color:var(--muted);text-align:center;padding:4px 0}
+  .slotgrid .rl{color:var(--muted);display:flex;align-items:center}
+  .slotcell{text-align:center;padding:8px 0;border-radius:8px;background:var(--bg);color:#c3b8bd;border:1px solid var(--line)}
+  .slotcell.on{background:var(--soft2);color:var(--anchor);border-color:var(--accent);font-weight:600}
+  .pf-actions{position:sticky;bottom:0;background:linear-gradient(to top,var(--bg) 70%,transparent);padding:14px 16px calc(16px + env(safe-area-inset-bottom));display:flex;gap:10px}
+  .pf-actions .like{flex:1;background:var(--anchor);color:#fff;padding:15px;font-size:16px;font-weight:600;border-radius:14px;box-shadow:var(--shadow)}
+  .pf-actions .mini{width:52px;height:52px;border-radius:50%;background:#fff;border:1px solid var(--line);color:var(--muted);font-size:20px;display:grid;place-items:center;flex:none}
+  .tagwrap{display:flex;flex-wrap:wrap}
+  /* mypage / plan */
+  .mp-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .mp-head{display:flex;align-items:center;gap:14px}
+  .mp-head .av{width:64px;height:64px;border-radius:50%;overflow:hidden;position:relative;display:grid;place-items:center;flex:none}
+  .mp-head .av img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+  .mp-head .av .ini{font-family:"Shippori Mincho",serif;color:#fff;font-size:26px}
+  .mp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  .mp-stat{background:var(--bg);border-radius:12px;padding:12px 6px;text-align:center}
+  .mp-stat b{display:block;font-size:20px;color:var(--anchor);font-family:"Shippori Mincho",serif}
+  .mp-stat span{font-size:11px;color:var(--muted)}
+  .mp-link{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:8px;color:var(--ink);font-size:14.5px}
+  .mp-link:hover{background:var(--soft)}
+  .mp-link .ic{font-size:18px;width:24px;text-align:center}
+  .mp-link .ar{margin-left:auto;color:var(--muted)}
+  .planpill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;background:var(--soft2);color:var(--anchor)}
+  .plan-card{border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px;background:var(--surface)}
+  .plan-card.hi{border-color:var(--accent);box-shadow:0 0 0 2px var(--soft2)}
+  .plan-card h3{font-family:"Shippori Mincho",serif;font-weight:600;font-size:18px;color:var(--anchor);margin:0 0 2px}
+  .plan-card .price{font-size:22px;font-weight:700;color:var(--ink);margin:6px 0}
+  .plan-card .price small{font-size:12px;color:var(--muted);font-weight:400}
+  .plan-card ul{list-style:none;padding:0;margin:10px 0 0;font-size:13.5px;color:#5a5057}
+  .plan-card li{padding:5px 0 5px 22px;position:relative}
+  .plan-card li::before{content:"✓";position:absolute;left:0;color:var(--safe);font-weight:700}
+  .cmp{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  .cmp th,.cmp td{border:1px solid var(--line);padding:9px 8px;text-align:center}
+  .cmp th{background:var(--soft);color:var(--anchor);font-weight:600}
+  .cmp td:first-child,.cmp th:first-child{text-align:left;color:var(--muted);font-weight:400}
+  .cmp .yes{color:var(--safe);font-weight:700}
+  .cmp .no{color:#c3b8bd}
+  /* notice */
+  .ntc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .ntc .d{font-size:11px;color:var(--muted)}
+  .ntc .t{font-weight:600;font-size:14.5px;margin:3px 0 4px;color:var(--ink)}
+  .ntc .x{font-size:13px;color:#5a5057;margin:0}
+  .ntc .cat{display:inline-block;font-size:10px;padding:2px 8px;border-radius:999px;background:var(--soft2);color:var(--anchor);margin-right:6px}
+  /* search page */
+  .srch-input{display:flex;gap:8px;margin-bottom:14px}
+  .srch-input input{flex:1;padding:11px 14px;border:1px solid var(--line);border-radius:999px;font-family:inherit;font-size:14px;background:#fff}
+  .fblock{margin-bottom:18px}
+  .fblock .fl{font-size:13px;font-weight:600;color:var(--anchor);margin-bottom:8px}
+  .tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+  .tgrid button{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 8px;font-size:13px;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:5px}
+  .tgrid button:hover{background:var(--soft);border-color:var(--accent)}
+  .tgrid .em{font-size:22px}
+  .seg{display:flex;flex-wrap:wrap;gap:8px}
+  .seg button{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13px;color:var(--ink)}
+  .seg button.on{background:var(--anchor);color:#fff;border-color:var(--anchor)}
   @media (max-width:640px){
-    #footBtn,#likesBtn,#msgBtn{display:none!important}
-    body.authed .botnav{display:flex}
-    body.authed{padding-bottom:62px}
-    .bar{gap:8px;padding:12px 14px}
-    .brand{font-size:19px}
+    .bar{gap:8px;padding:11px 14px}
+    .brand{font-size:18px}
     .grid{grid-template-columns:repeat(2,1fr);gap:10px;padding:0 14px}
-    .filters{gap:8px;padding:0 14px}
-    .filters select,.filters input{min-width:0;font-size:13px;padding:8px 10px}
-    .filters #fQ{flex:1 1 100%}
-    .lead{padding:24px 16px 4px}
+    .lead{padding:22px 16px 2px}
     .ava .ini{font-size:36px}
+    .secttl{padding:0 16px}
   }
-  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--anchor);color:#fff;padding:12px 22px;border-radius:999px;font-size:14px;opacity:0;transition:.3s;z-index:80;pointer-events:none;max-width:90vw}
+  .toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);background:var(--anchor);color:#fff;padding:12px 22px;border-radius:999px;font-size:14px;opacity:0;transition:.3s;z-index:90;pointer-events:none;max-width:90vw}
   .toast.on{opacity:1}
 </style>
 </head>
 <body>
 <header>
   <div class="bar">
-    <div class="brand">ソワレ<small>SOIRÉE MATCHING</small></div>
+    <div class="brand" onclick="goHome()" style="cursor:pointer">ソワレ<small>SOIRÉE MATCHING</small></div>
     <div class="spacer"></div>
-    <button class="ghost" id="footBtn" style="display:none">足あと<span class="hbadge" id="footBadge" style="display:none">0</span></button>
-    <button class="ghost" id="likesBtn" style="display:none">相手からのいいね<span class="hbadge" id="likesBadge" style="display:none">0</span></button>
-    <button class="ghost" id="msgBtn" style="display:none">メッセージ<span class="hbadge" id="msgBadge" style="display:none">0</span></button>
+    <button class="bell" id="bellBtn" style="display:none" onclick="openNotice()">🔔<span class="hbadge" id="noticeBadge" style="display:none">0</span></button>
+    <button class="hdname" id="hdAcct" style="display:none" onclick="openMyPagePage()"><span class="av" id="hdAv"></span><span id="hdNameTxt"></span></button>
     <button class="ghost" id="loginBtn">ログイン</button>
     <button class="solid" id="signupBtn">はじめる</button>
   </div>
 </header>
-<div class="menu" id="acctMenu">
-  <button onclick="openMyPage()">マイページ（プロフィール編集）</button>
-  <button onclick="pickVerify()">本人確認を申請</button>
-  <button onclick="enablePush()">端末通知をオンにする</button>
-  <button id="adminMenuBtn" style="display:none" onclick="location.href='/admin.html'">管理画面</button>
-  <button onclick="doLogout()">ログアウト</button>
-</div>
+
 <nav class="botnav" id="botnav">
-  <button onclick="goHome()"><span class="ic">🔍</span>さがす</button>
-  <button onclick="openFootprints()"><span class="ic">👣</span>足あと<span class="nbadge" id="footBadgeB"></span></button>
-  <button onclick="openLikes()"><span class="ic">♡</span>いいね<span class="nbadge" id="likesBadgeB"></span></button>
-  <button onclick="navMessages()"><span class="ic">💬</span>トーク<span class="nbadge" id="msgBadgeB"></span></button>
-  <button onclick="me?openMyPage():openAuth('login')"><span class="ic">☰</span>マイページ</button>
+  <button data-nav="home" onclick="goHome()"><span class="ic">🏠</span>おすすめ</button>
+  <button data-nav="search" onclick="openSearch()"><span class="ic">🔍</span>さがす</button>
+  <button data-nav="likes" onclick="openLikes()"><span class="ic">♡</span>相手から<span class="nbadge" id="likesBadgeB"></span></button>
+  <button data-nav="msg" onclick="navMessages()"><span class="ic">💬</span>トーク<span class="nbadge" id="msgBadgeB"></span></button>
+  <button data-nav="mypage" onclick="openMyPagePage()"><span class="ic">☰</span>マイページ</button>
 </nav>
 
 <main id="view-home">
   <section class="lead">
     <h1>同じ立場だからこそ、<br>肩の力を抜いて話せる。</h1>
-    <p>安心してつながることを大切にした、大人のためのマッチング。まずは気になる人を探してみてください。</p>
+    <p>安心してつながることを大切にした、大人のためのマッチング。気になる人をタップしてプロフィールを見てみてください。</p>
   </section>
-  <div class="filters">
-    <input id="fQ" placeholder="キーワード（名前・自己紹介）" style="flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px;background:var(--surface)">
-    <select id="fArea"><option value="">エリアすべて</option></select>
-    <select id="fAge"><option value="">年齢すべて</option><option value="20,29">20代</option><option value="30,39">30代</option><option value="40,49">40代</option><option value="50,120">50代以上</option></select>
-    <select id="fSort"><option value="active">アクティブ順</option><option value="new">新着順</option></select>
-    <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)"><input type="checkbox" id="fVerified" style="width:auto">本人確認済み</label>
-    <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)"><input type="checkbox" id="fOnline" style="width:auto">オンライン</label>
-  </div>
+  <div class="secttl"><h2>おすすめのお相手</h2><span class="sub" id="homeSub">アクティブ順</span></div>
   <div id="tagFilterBar" style="max-width:1080px;margin:10px auto 0;padding:0 20px;display:none"></div>
   <div class="grid" id="grid"></div>
 </main>
 
-<!-- メッセージ一覧ページ -->
+<!-- さがす -->
+<section class="page" id="view-search">
+  <div class="pbar"><button class="back" onclick="goHome()">←</button><h2>さがす</h2></div>
+  <div class="pbody pad" id="searchBody"></div>
+</section>
+
+<!-- 相手から（いいね / 足あと） -->
+<section class="page" id="view-likes">
+  <div class="pbar"><button class="back" onclick="goHome()">←</button><h2>相手から</h2></div>
+  <div class="tabs">
+    <button id="tabLikes" class="active" onclick="setLikesTab('likes')">いいね<span class="tbadge" id="likesTabBadge" style="display:none">0</span></button>
+    <button id="tabFoot" onclick="setLikesTab('foot')">足あと<span class="tbadge" id="footTabBadge" style="display:none">0</span></button>
+  </div>
+  <div class="pbody pad" id="likesBody"></div>
+</section>
+
+<!-- メッセージ一覧 -->
 <section class="page" id="view-messages">
-  <div class="pbar"><button class="back" onclick="goHome()">←</button><h2>メッセージ</h2></div>
+  <div class="pbar"><button class="back" onclick="goHome()">←</button><h2>トーク</h2></div>
   <div class="tabs">
     <button id="tabTalk" class="active" onclick="setConvTab('talk')">トーク中</button>
     <button id="tabMatch" onclick="setConvTab('match')">マッチ中<span class="tbadge" id="matchTabBadge" style="display:none">0</span></button>
@@ -215,7 +301,7 @@
   <div class="convlist" id="convlist"></div>
 </section>
 
-<!-- トークページ -->
+<!-- トークルーム -->
 <section class="page" id="view-chat">
   <div class="pbar">
     <button class="back" onclick="goMessages()">←</button>
@@ -234,6 +320,24 @@
   <div class="cmenu-scrim" id="chatMenuScrim"><div class="cmenu" id="chatMenu"></div></div>
 </section>
 
+<!-- プロフィール詳細 -->
+<section class="page" id="view-profile">
+  <div class="pbar"><button class="back" onclick="closeProfile()">←</button><h2>プロフィール</h2></div>
+  <div class="pbody" id="profileBody"></div>
+</section>
+
+<!-- マイページ -->
+<section class="page" id="view-mypage">
+  <div class="pbar"><button class="back" onclick="goHome()">←</button><h2>マイページ</h2></div>
+  <div class="pbody pad" id="mypageBody"></div>
+</section>
+
+<!-- お知らせ -->
+<section class="page" id="view-notice">
+  <div class="pbar"><button class="back" onclick="goHome()">←</button><h2>お知らせ</h2></div>
+  <div class="pbody pad" id="noticeBody"></div>
+</section>
+
 <!-- モーダル群 -->
 <div class="scrim" id="authScrim"><div class="modal">
   <h2 id="authTitle" class="mincho">はじめる</h2>
@@ -246,7 +350,6 @@
   <div class="note">18歳以上の方のみご利用いただけます。登録により利用規約に同意したものとみなします。</div>
 </div></div>
 <div class="scrim" id="pScrim"><div class="modal" id="pModal"></div></div>
-<div class="scrim" id="likesScrim"><div class="modal" id="likesModal"></div></div>
 <div class="scrim" id="onboardScrim"><div class="modal" id="onboardModal"></div></div>
 <div class="scrim" id="myScrim"><div class="modal" id="myModal"></div></div>
 <div class="scrim" id="galleryScrim"><div class="modal" id="galleryModal"></div></div>
@@ -259,13 +362,43 @@
 <script>
 const AREAS=['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
 const PRESET_TAGS=['カフェ巡り','映画','音楽','お酒','グルメ','旅行','アウトドア','読書','カメラ','美術・アート','スポーツ観戦','ドライブ','料理','ゲーム','散歩','温泉','ペット','ライブ・フェス'];
+const TAG_EMOJI={'カフェ巡り':'☕','映画':'🎬','音楽':'🎵','お酒':'🍷','グルメ':'🍽️','旅行':'✈️','アウトドア':'🏕️','読書':'📖','カメラ':'📷','美術・アート':'🎨','スポーツ観戦':'🏟️','ドライブ':'🚗','料理':'🍳','ゲーム':'🎮','散歩':'🚶','温泉':'♨️','ペット':'🐾','ライブ・フェス':'🎤'};
 const GRAD=['linear-gradient(135deg,#C56B72,#5C2A45)','linear-gradient(135deg,#7C6A9C,#3f3557)','linear-gradient(135deg,#5E7C6E,#37473f)','linear-gradient(135deg,#C98B6B,#7a4b34)','linear-gradient(135deg,#8C6B9C,#4a3557)','linear-gradient(135deg,#6B8CA0,#33505f)'];
 const grad=s=>GRAD[[...String(s)].reduce((a,c)=>a+c.charCodeAt(0),0)%GRAD.length];
 const gLabel={female:'女性',male:'男性',other:'その他'};
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const photoURL=k=>'/api/photo?key='+encodeURIComponent(k);
 const galleryURL=k=>'/api/gallery/photo?key='+encodeURIComponent(k);
-let me=null, convMap={}, convTab='talk', chatState={matchId:null,after:0,timer:null}, unreadState={messages:0,likes:0,footprints:0}, unreadTimer=null, myTags=[], tagFilter=null;
+
+/* ---- プロフィール属性の選択肢 ---- */
+const OPT={
+  purpose:['食事・お茶から','まずは友達から','気軽な関係','秘密の関係','真剣な関係','オンラインのみ'],
+  marital:['独身','既婚','事実婚','離婚済み'],
+  children:['なし','あり（同居）','あり（別居）'],
+  income:['〜400万円','400〜600万円','600〜800万円','800〜1000万円','1000〜1500万円','1500万円〜'],
+  education:['高校卒','専門・短大卒','大学卒','大学院卒','その他'],
+  body_type:['スリム','やや細め','普通','グラマー','ぽっちゃり','筋肉質'],
+  drinking:['飲まない','ときどき飲む','よく飲む'],
+  smoking:['吸わない','ときどき吸う','吸う','電子タバコ','相手が嫌なら吸わない'],
+  holiday:['土日','平日','不定期','シフト制']
+};
+const ATTR_META=[
+  ['purpose','🍷','探している関係'],
+  ['marital','💍','婚姻状況'],
+  ['children','👶','子ども'],
+  ['job','💼','お仕事'],
+  ['income','💰','年収'],
+  ['education','🎓','最終学歴'],
+  ['height','📏','身長'],
+  ['body_type','🧍','体型'],
+  ['drinking','🍶','お酒'],
+  ['smoking','🚬','タバコ'],
+  ['holiday','📅','休日']
+];
+const SLOT_DT=[['wd','平日'],['we','土日祝']];
+const SLOT_TM=[['morning','朝'],['day','昼'],['evening','夜'],['late','深夜']];
+
+let me=null, convMap={}, convTab='talk', likesTab='likes', chatState={matchId:null,after:0,timer:null}, unreadState={messages:0,likes:0,footprints:0}, unreadTimer=null, myTags=[], tagFilter=null;
 
 async function api(path,opts={}){
   const r=await fetch('/api'+path,{credentials:'same-origin',...opts});
@@ -282,7 +415,6 @@ function fmtTime(ts){
   const sameDay=d.toDateString()===now.toDateString();
   return sameDay?d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}):`${d.getMonth()+1}/${d.getDate()}`;
 }
-
 function isOnline(ts){ return ts && (Date.now()-ts)<5*60000; }
 function activeLabel(ts){
   if(!ts)return'';
@@ -296,168 +428,333 @@ function activeLabel(ts){
 
 async function loadMe(){ try{me=await api('/me');}catch{me=null;} if(me&&me.banned){ toast('このアカウントは停止されています'); try{await jpost('/logout',{});}catch{} me=null; } renderAuthState(); }
 function renderAuthState(){
-  document.getElementById('loginBtn').style.display=me?'none':'';
-  document.getElementById('msgBtn').style.display=me?'':'none';
-  document.getElementById('likesBtn').style.display=me?'':'none';
-  document.getElementById('footBtn').style.display=me?'':'none';
-  document.getElementById('signupBtn').textContent=me?`${me.display_name||'アカウント'} さん`:'はじめる';
-  document.getElementById('adminMenuBtn').style.display=(me&&me.is_admin)?'':'none';
-  document.body.classList.toggle('authed', !!me);
+  const authed=!!me;
+  document.getElementById('loginBtn').style.display=authed?'none':'';
+  document.getElementById('signupBtn').style.display=authed?'none':'';
+  document.getElementById('bellBtn').style.display=authed?'':'none';
+  const acct=document.getElementById('hdAcct');
+  acct.style.display=authed?'':'none';
+  if(authed){
+    document.getElementById('hdNameTxt').textContent=(me.display_name||'アカウント');
+    const av=document.getElementById('hdAv');
+    av.style.background=grad(me.display_name||'me');
+    av.innerHTML=avatarHTML(me);
+  }
+  document.body.classList.toggle('authed', authed);
   document.body.classList.add('ready');
-  if(me){ startUnreadPoll(); } else { stopUnreadPoll(); }
+  if(authed){ startUnreadPoll(); } else { stopUnreadPoll(); }
+}
+function setNav(name){
+  document.querySelectorAll('.botnav button[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===name));
 }
 
 /* ---- explorer ---- */
 let expState={offset:0,loading:false,done:false};
 function renderCard(it){
   const el=document.createElement('div'); el.className='card';
-  el.innerHTML=`<div class="ava" style="background:${grad(it.display_name)}">${it.verified?'<div class="badge">本人確認済み</div>':''}${isOnline(it.last_active)?'<div class="odot"></div>':''}${avatarHTML(it)}</div>
+  const newish=it.created_at&&(Date.now()-it.created_at)<14*86400000;
+  el.innerHTML=`<div class="ava" style="background:${grad(it.display_name)}">${it.verified?'<div class="badge">本人確認済み</div>':''}${newish?'<div class="nbadge2">NEW</div>':''}${isOnline(it.last_active)?'<div class="odot"></div>':''}${avatarHTML(it)}</div>
     <div class="info"><div class="name"><b>${esc(it.display_name)}</b> ${it.age}</div>
-      <div class="meta">${gLabel[it.gender]||''}・${esc(it.area)}${it.last_active?' ・<span class="'+(isOnline(it.last_active)?'online':'')+'">'+activeLabel(it.last_active)+'</span>':''}</div>
+      <div class="meta">${esc(it.area)}${it.last_active?' ・<span class="'+(isOnline(it.last_active)?'online':'')+'">'+activeLabel(it.last_active)+'</span>':''}</div>
       <div class="tag">${esc(it.tagline)}</div></div>`;
   el.onclick=()=>openProfileById(it.user_id);
   return el;
 }
+function buildQS(){
+  const qs=new URLSearchParams();
+  if(searchF.area)qs.set('area',searchF.area);
+  if(searchF.min)qs.set('min',searchF.min);
+  if(searchF.max)qs.set('max',searchF.max);
+  if(searchF.q)qs.set('q',searchF.q);
+  qs.set('sort',searchF.sort||'active');
+  if(searchF.verified)qs.set('verified','1');
+  if(searchF.online)qs.set('online','1');
+  if(tagFilter)qs.set('tag',tagFilter);
+  return qs;
+}
+let searchF={area:'',min:'',max:'',q:'',sort:'active',verified:false,online:false};
 async function loadProfiles(reset=true){
   if(expState.loading)return;
   if(reset){ expState={offset:0,loading:false,done:false}; document.getElementById('grid').innerHTML=''; }
   if(expState.done)return;
   expState.loading=true;
-  const a=document.getElementById('fArea').value;
-  const [min,max]=(document.getElementById('fAge').value||'').split(',');
-  const kw=document.getElementById('fQ').value.trim();
-  const qs=new URLSearchParams();
-  if(a)qs.set('area',a); if(min)qs.set('min',min); if(max)qs.set('max',max);
-  if(kw)qs.set('q',kw);
-  qs.set('sort',document.getElementById('fSort').value);
-  if(document.getElementById('fVerified').checked)qs.set('verified','1');
-  if(document.getElementById('fOnline').checked)qs.set('online','1');
-  if(tagFilter)qs.set('tag',tagFilter);
+  const qs=buildQS();
   qs.set('limit','24'); qs.set('offset',expState.offset);
+  document.getElementById('homeSub').textContent=(searchF.sort==='new'?'新着順':'アクティブ順')+(tagFilter?'・'+tagFilter:'')+(searchF.area?'・'+searchF.area:'');
   try{
     const {items}=await api('/profiles?'+qs.toString());
     const grid=document.getElementById('grid');
-    if(expState.offset===0 && !items.length){ grid.innerHTML='<p style="color:var(--muted)">条件に合う方が見つかりませんでした。</p>'; expState.done=true; }
+    if(expState.offset===0 && !items.length){ grid.innerHTML='<p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px 0">条件に合う方が見つかりませんでした。</p>'; expState.done=true; }
     for(const it of items) grid.appendChild(renderCard(it));
     expState.offset+=items.length;
     if(items.length<24) expState.done=true;
   }catch(e){}
   expState.loading=false;
 }
-['fArea','fAge','fSort'].forEach(id=>document.getElementById(id).onchange=()=>loadProfiles(true));
-document.getElementById('fVerified').onchange=()=>loadProfiles(true);
-document.getElementById('fOnline').onchange=()=>loadProfiles(true);
-let qTimer=null;
-document.getElementById('fQ').addEventListener('input',()=>{ clearTimeout(qTimer); qTimer=setTimeout(()=>loadProfiles(true),350); });
+function anyPageOpen(){ return !!document.querySelector('.page.on'); }
 window.addEventListener('scroll',()=>{
-  if(document.getElementById('view-messages').classList.contains('on')||document.getElementById('view-chat').classList.contains('on'))return;
+  if(anyPageOpen())return;
   if((window.innerHeight+window.scrollY)>=document.body.offsetHeight-600) loadProfiles(false);
 });
 function renderTagBar(){
   const b=document.getElementById('tagFilterBar');
   if(!tagFilter){ b.style.display='none'; b.innerHTML=''; return; }
-  b.style.display=''; b.innerHTML=`<span class="chip common">タグ: ${esc(tagFilter)} <span onclick="clearTagFilter()" style="cursor:pointer">✕</span></span>`;
+  b.style.display=''; b.innerHTML=`<span class="chip common">${TAG_EMOJI[tagFilter]||'#'} ${esc(tagFilter)} <span onclick="clearTagFilter()" style="cursor:pointer">✕</span></span>`;
 }
 function setTagFilter(t){ tagFilter=t; renderTagBar(); loadProfiles(true); window.scrollTo(0,0); }
 function clearTagFilter(){ tagFilter=null; renderTagBar(); loadProfiles(true); }
-function filterByTag(t){ document.getElementById('pScrim').classList.remove('on'); document.getElementById('likesScrim').classList.remove('on'); goHome(); setTagFilter(t); }
+function filterByTag(t){ closeProfile(); closeModals(); goHome(); setTagFilter(t); }
 
+/* ---- さがす ---- */
+function openSearch(){
+  if(location.hash!=='#search') location.hash='#search';
+}
+function renderSearch(){
+  const areaOpts=['<option value="">エリアすべて</option>'].concat(AREAS.map(a=>`<option${searchF.area===a?' selected':''}>${a}</option>`)).join('');
+  const ageSeg=[['','指定なし'],['20,29','20代'],['30,39','30代'],['40,49','40代'],['50,120','50代以上']];
+  const curAge=searchF.min?`${searchF.min},${searchF.max}`:'';
+  document.getElementById('searchBody').innerHTML=`
+    <div class="srch-input">
+      <input id="sQ" placeholder="キーワード（名前・自己紹介）" value="${esc(searchF.q)}">
+      <button class="solid" onclick="applySearch()">さがす</button>
+    </div>
+    <div class="fblock"><div class="fl">エリア</div>
+      <select id="sArea" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px;background:#fff">${areaOpts}</select>
+    </div>
+    <div class="fblock"><div class="fl">年齢</div>
+      <div class="seg" id="sAgeSeg">${ageSeg.map(([v,l])=>`<button class="${curAge===v?'on':''}" data-age="${v}" onclick="pickAge('${v}',this)">${l}</button>`).join('')}</div>
+    </div>
+    <div class="fblock"><div class="fl">こだわり条件</div>
+      <div class="seg">
+        <button class="${searchF.verified?'on':''}" id="sVer" onclick="searchF.verified=!searchF.verified;this.classList.toggle('on')">本人確認済み</button>
+        <button class="${searchF.online?'on':''}" id="sOn" onclick="searchF.online=!searchF.online;this.classList.toggle('on')">オンライン</button>
+      </div>
+      <div class="seg" style="margin-top:8px">
+        <button class="${searchF.sort==='active'?'on':''}" onclick="searchF.sort='active';renderSearch()">アクティブ順</button>
+        <button class="${searchF.sort==='new'?'on':''}" onclick="searchF.sort='new';renderSearch()">新着順</button>
+      </div>
+    </div>
+    <div class="fblock"><div class="fl">やりたいこと・興味でさがす</div>
+      <div class="tgrid">${PRESET_TAGS.map(t=>`<button onclick="filterByTag('${t}')"><span class="em">${TAG_EMOJI[t]||'#'}</span>${esc(t)}</button>`).join('')}</div>
+    </div>
+    <button class="solid full" style="margin-top:4px" onclick="applySearch()">この条件でさがす</button>`;
+}
+function pickAge(v,el){ document.querySelectorAll('#sAgeSeg button').forEach(b=>b.classList.remove('on')); el.classList.add('on'); el.dataset._p=v; searchF._age=v; }
+function applySearch(){
+  searchF.q=(document.getElementById('sQ')?.value||'').trim();
+  searchF.area=document.getElementById('sArea')?.value||'';
+  const ageSel=document.querySelector('#sAgeSeg button.on');
+  const av=ageSel?ageSel.dataset.age:'';
+  [searchF.min,searchF.max]=av?av.split(','):['',''];
+  tagFilter=null; renderTagBar();
+  goHome(); loadProfiles(true); window.scrollTo(0,0);
+}
+
+/* ---- プロフィール詳細 ---- */
 async function openProfileById(id){
   if(!id)return;
   try{ const p=await api('/profile?user_id='+encodeURIComponent(id)); renderProfile(p); }
   catch(e){ toast(e.message); }
 }
+function attrVal(p,key){
+  if(key==='height') return p.height?p.height+'cm':'';
+  return p[key]||'';
+}
 function renderProfile(p){
   const photos=(p.photos&&p.photos.length)?p.photos:[];
-  const mainImg=photos.length
-    ? `<img id="pfMain" src="${photoURL(photos[0])}" style="width:100%;height:300px;object-fit:cover;border-radius:14px">`
-    : `<div class="big" style="width:100%;height:180px;border-radius:14px;background:${grad(p.display_name)}"><span class="ini" style="font-size:56px">${esc(String(p.display_name)[0]||'?')}</span></div>`;
+  const hero=photos.length
+    ? `<img id="pfMain" src="${photoURL(photos[0])}">`
+    : `<div class="ini" style="background:${grad(p.display_name)}">${esc(String(p.display_name)[0]||'?')}</div>`;
+  const act=p.last_active?`<div class="pf-active"><span class="dot" style="background:${isOnline(p.last_active)?'#3fb27f':'#c3b8bd'}"></span>${activeLabel(p.last_active)||'しばらくオフライン'}</div>`:'';
+  const vb=p.verified?'<div class="pf-vbadge">本人確認済み</div>':'';
   const thumbs=photos.length>1
-    ? `<div style="display:flex;gap:8px;margin-top:8px;overflow-x:auto">${photos.map(k=>`<img src="${photoURL(k)}" onclick="var m=document.getElementById('pfMain');if(m)m.src='${photoURL(k)}'" style="width:56px;height:56px;object-fit:cover;border-radius:8px;cursor:pointer;flex:none">`).join('')}</div>`
+    ? `<div class="pf-thumbs">${photos.map((k,i)=>`<img class="${i===0?'sel':''}" src="${photoURL(k)}" onclick="pfSwap('${photoURL(k)}',this)">`).join('')}</div>`
     : '';
-  document.getElementById('pModal').innerHTML=`
-    ${mainImg}${thumbs}
-    <h2 class="mincho" style="margin-top:14px">${esc(p.display_name)} <span style="font-size:18px">${p.age}</span></h2>
-    <div class="meta">${gLabel[p.gender]||''}・${esc(p.area)}${p.last_active?' ・<span class="'+(isOnline(p.last_active)?'online':'')+'">'+activeLabel(p.last_active)+'</span>':''} ${p.verified?'・<span style="color:var(--safe)">本人確認済み</span>':''}</div>
-    ${p.tagline?`<p class="mincho" style="color:#6a5d64;margin:12px 0 4px">${esc(p.tagline)}</p>`:''}
-    ${p.bio?`<p style="color:#5a5057;font-size:14px;white-space:pre-wrap;margin:8px 0 4px">${esc(p.bio)}</p>`:''}
-    ${p.tags&&p.tags.length?`<div style="margin:12px 0 6px">${p.tags.map(t=>`<span class="chip ${me&&me.tags&&me.tags.includes(t)?'common':''}" onclick="filterByTag('${t}')">${esc(t)}</span>`).join('')}</div>`:''}
-    ${me&&me.id===p.user_id?'':`<button class="solid full" id="likeBtn">いいねを送る</button>
-    <button class="ghost full" style="margin-top:6px;color:var(--muted)" onclick="blockFromProfile('${p.user_id}')">ブロックする</button>`}`;
-  document.getElementById('pScrim').classList.add('on');
+  // 自己紹介
+  const bioSec=p.bio?`<div class="pf-sec"><h3>💬 自己紹介</h3><p class="pf-bio">${esc(p.bio)}</p></div>`:'';
+  // 都合の良い時間帯
+  const avail=(p.avail||'').split(',').filter(Boolean);
+  let slotSec='';
+  if(avail.length){
+    let rows=SLOT_DT.map(([dt,dl])=>`<div class="rl">${dl}</div>`+SLOT_TM.map(([tm])=>`<div class="slotcell ${avail.includes(dt+'_'+tm)?'on':''}">${avail.includes(dt+'_'+tm)?'◯':''}</div>`).join('')).join('');
+    slotSec=`<div class="pf-sec"><h3>🕒 都合の良い時間帯</h3>
+      <div class="slotgrid"><div></div>${SLOT_TM.map(([,l])=>`<div class="hd">${l}</div>`).join('')}${rows}</div></div>`;
+  }
+  // 属性行
+  const rows=ATTR_META.map(([key,ic,label])=>{
+    const v=attrVal(p,key);
+    return `<div class="pf-row"><div class="k">${ic} ${label}</div><div class="v ${v?'':'na'}">${v?esc(v):'未設定'}</div></div>`;
+  }).join('');
+  const attrSec=`<div class="pf-sec"><h3>📋 基本情報</h3><div class="pf-rows">
+    <div class="pf-row"><div class="k">📍 エリア</div><div class="v">${esc(p.area||'')}</div></div>
+    ${rows}</div></div>`;
+  // タグ
+  const tagSec=(p.tags&&p.tags.length)?`<div class="pf-sec"><h3>🏷️ 興味・関心</h3><div class="tagwrap">${p.tags.map(t=>`<span class="chip ${me&&me.tags&&me.tags.includes(t)?'common':''}" onclick="filterByTag('${t}')">${TAG_EMOJI[t]?TAG_EMOJI[t]+' ':''}${esc(t)}</span>`).join('')}</div></div>`:'';
+  const own=me&&me.id===p.user_id;
+  const actions=own?'':`<div class="pf-actions">
+      <button class="mini" onclick="blockFromProfile('${p.user_id}')" title="ブロック">🚫</button>
+      <button class="like" id="likeBtn">♡ いいねを送る</button>
+    </div>`;
+  document.getElementById('profileBody').innerHTML=`
+    <div class="pf-hero">${hero}${act}${vb}</div>
+    ${thumbs}
+    <div class="pf-sec"><h3 style="margin:0"><span class="pf-name mincho">${esc(p.display_name)}<span>${p.age}歳・${esc(p.area||'')}</span></span></h3>
+      ${p.tagline?`<p class="mincho" style="color:#6a5d64;margin:10px 0 0;font-size:15px">${esc(p.tagline)}</p>`:''}</div>
+    ${bioSec}${slotSec}${attrSec}${tagSec}
+    <div style="height:8px"></div>
+    ${actions}`;
+  openPage('view-profile');
   const lb=document.getElementById('likeBtn'); if(lb) lb.onclick=()=>sendLike(p.user_id);
 }
+function pfSwap(src,el){ const m=document.getElementById('pfMain'); if(m)m.src=src; document.querySelectorAll('.pf-thumbs img').forEach(i=>i.classList.remove('sel')); el.classList.add('sel'); }
+function closeProfile(){ const v=document.getElementById('view-profile'); v.classList.remove('on'); if(!anyPageOpen()) document.body.style.overflow=''; syncNavFromHash(); }
 async function blockFromProfile(id){
   if(!confirm('この相手をブロックしますか？今後お互いに表示されなくなります。'))return;
-  try{ await jpost('/block',{target_id:id}); document.getElementById('pScrim').classList.remove('on'); await loadProfiles(); await pollUnread(); toast('ブロックしました'); }
+  try{ await jpost('/block',{target_id:id}); closeProfile(); await loadProfiles(); await pollUnread(); toast('ブロックしました'); }
   catch(e){ toast(e.message); }
 }
 async function sendLike(to){
-  if(!me){closeModals();openAuth('signup');return;}
-  try{const r=await jpost('/like',{to_id:to});closeModals();toast(r.matched?'マッチしました！メッセージから話しかけられます':'いいねを送りました');pollUnread();}
+  if(!me){openAuth('signup');return;}
+  try{const r=await jpost('/like',{to_id:to});closeProfile();toast(r.matched?'マッチしました！トークから話しかけられます':'いいねを送りました');pollUnread();}
   catch(e){toast(e.message);}
 }
 
-/* ---- 相手からのいいね ---- */
-let likesItems=[];
-async function openLikes(){
-  if(!me){openAuth('login');return;}
-  const {items}=await api('/likes/received'); likesItems=items;
-  const list=items.length?items.map((it,i)=>`
-    <div class="lcard">
-      <div class="lav" style="background:${grad(it.display_name)}" onclick="openProfileById('${it.user_id}')">${avatarHTML(it)}</div>
-      <div class="lbody">
-        <div class="name"><b>${esc(it.display_name)}</b> ${it.age}</div>
-        <div class="meta">${gLabel[it.gender]||''}・${esc(it.area)} ${it.verified?'・<span style="color:var(--safe)">本人確認済み</span>':''}</div>
-        <div class="tag">${esc(it.tagline)}</div>
-        <button class="solid" onclick="likeBack('${it.user_id}')">いいねを返す</button>
-      </div></div>`).join(''):'<p style="color:var(--muted)">まだ「いいね」は届いていません。</p>';
-  document.getElementById('likesModal').innerHTML=`<h2 class="mincho">相手からのいいね</h2>
-    <p class="note" style="margin:4px 0 14px">あなたに「いいね」をくれた方です（新しい順）。返すとマッチになります。</p>${list}`;
-  document.getElementById('likesScrim').classList.add('on');
+/* ---- 相手から（いいね / 足あと）---- */
+function openLikes(){ if(!me){openAuth('login');return;} if(location.hash!=='#likes') location.hash='#likes'; }
+function setLikesTab(t){
+  likesTab=t;
+  document.getElementById('tabLikes').classList.toggle('active',t==='likes');
+  document.getElementById('tabFoot').classList.toggle('active',t==='foot');
+  t==='likes'?renderLikesList():renderFootprintsList();
+}
+async function renderLikesList(){
+  const box=document.getElementById('likesBody'); box.innerHTML='<p class="empty">読み込み中…</p>';
+  try{
+    const {items}=await api('/likes/received');
+    box.innerHTML=items.length?items.map(it=>`
+      <div class="lcard">
+        <div class="lav" style="background:${grad(it.display_name)}" onclick="openProfileById('${it.user_id}')">${isOnline(it.last_active)?'<div class="odot"></div>':''}${avatarHTML(it)}</div>
+        <div class="lbody">
+          <div class="name"><b>${esc(it.display_name)}</b> ${it.age}</div>
+          <div class="meta">${esc(it.area)} ${it.verified?'・<span style="color:var(--safe)">本人確認済み</span>':''}</div>
+          <div class="tag">${esc(it.tagline)}</div>
+          <button class="solid" onclick="likeBack('${it.user_id}')">いいねを返す</button>
+        </div></div>`).join(''):'<p class="empty">まだ「いいね」は届いていません。<br>プロフィールを充実させると届きやすくなります。</p>';
+  }catch(e){ box.innerHTML=`<p class="empty">${esc(e.message)}</p>`; }
+}
+async function renderFootprintsList(){
+  const box=document.getElementById('likesBody'); box.innerHTML='<p class="empty">読み込み中…</p>';
+  try{
+    const {items}=await api('/footprints');
+    box.innerHTML=items.length?items.map(it=>`
+      <div class="lcard" style="cursor:pointer" onclick="openProfileById('${it.user_id}')">
+        <div class="lav" style="background:${grad(it.display_name)}">${isOnline(it.last_active)?'<div class="odot"></div>':''}${avatarHTML(it)}</div>
+        <div class="lbody">
+          <div class="name"><b>${esc(it.display_name)}</b> ${it.age}</div>
+          <div class="meta">${esc(it.area)}${it.last_active?' ・<span class="'+(isOnline(it.last_active)?'online':'')+'">'+activeLabel(it.last_active)+'</span>':''}</div>
+          <div class="meta" style="margin:0">${fmtTime(it.last_at)} に訪問</div>
+        </div></div>`).join(''):'<p class="empty">まだ足あとはありません。</p>';
+    pollUnread();
+  }catch(e){ box.innerHTML=`<p class="empty">${esc(e.message)}</p>`; }
 }
 async function likeBack(to){
-  try{const r=await jpost('/like',{to_id:to});toast(r.matched?'マッチしました！メッセージから話しかけられます':'いいねを返しました');await pollUnread();await openLikes();}
+  try{const r=await jpost('/like',{to_id:to});toast(r.matched?'マッチしました！トークから話しかけられます':'いいねを返しました');await pollUnread();renderLikesList();}
   catch(e){toast(e.message);}
-}
-async function openFootprints(){
-  if(!me){openAuth('login');return;}
-  const {items}=await api('/footprints');
-  const list=items.length?items.map(it=>`
-    <div class="lcard" style="cursor:pointer" onclick="openProfileById('${it.user_id}')">
-      <div class="lav" style="background:${grad(it.display_name)}">${isOnline(it.last_active)?'<div class="odot"></div>':''}${avatarHTML(it)}</div>
-      <div class="lbody">
-        <div class="name"><b>${esc(it.display_name)}</b> ${it.age}</div>
-        <div class="meta">${gLabel[it.gender]||''}・${esc(it.area)}${it.last_active?' ・<span class="'+(isOnline(it.last_active)?'online':'')+'">'+activeLabel(it.last_active)+'</span>':''}</div>
-        <div class="meta" style="margin:0">${fmtTime(it.last_at)} に訪問</div>
-      </div>
-    </div>`).join(''):'<p style="color:var(--muted)">まだ足あとはありません。</p>';
-  document.getElementById('likesModal').innerHTML=`<h2 class="mincho">足あと</h2>
-    <p class="note" style="margin:4px 0 14px">あなたのプロフィールを見た人です（新しい順）。</p>${list}`;
-  document.getElementById('likesScrim').classList.add('on');
-  pollUnread();
 }
 
 /* ---- ページ遷移（ハッシュルーター）---- */
+function openPage(id){ document.getElementById(id).classList.add('on'); document.body.style.overflow='hidden'; }
 async function router(){
   const h=location.hash;
-  const vm=document.getElementById('view-messages'), vc=document.getElementById('view-chat');
-  vm.classList.remove('on'); vc.classList.remove('on');
+  ['view-messages','view-chat','view-search','view-likes','view-mypage','view-notice'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  // プロフィール詳細は独自管理（ハッシュを持たない）
   stopChatPoll(); exitSelect(); closeChatMenu();
   if(h.startsWith('#chat=')){
     if(!me){location.hash='';return;}
     const mid=h.slice(6);
     if(!convMap[mid]) await loadConversations();
-    showChat(mid);
+    showChat(mid); setNav('msg');
   }else if(h==='#msg'){
     if(!me){location.hash='';openAuth('login');return;}
-    vm.classList.add('on'); loadConversations();
+    openPage('view-messages'); loadConversations(); setNav('msg');
+  }else if(h==='#search'){
+    renderSearch(); openPage('view-search'); setNav('search');
+  }else if(h==='#likes'){
+    if(!me){location.hash='';openAuth('login');return;}
+    openPage('view-likes'); setLikesTab(likesTab); setNav('likes');
+  }else if(h==='#mypage'){
+    if(!me){location.hash='';openAuth('login');return;}
+    renderMyPagePage(); openPage('view-mypage'); setNav('mypage');
+  }else if(h==='#notice'){
+    renderNotice(); openPage('view-notice'); setNav('notice');
+  }else{
+    if(!anyPageOpen()) document.body.style.overflow='';
+    setNav('home');
   }
 }
+function syncNavFromHash(){ router(); }
 window.addEventListener('hashchange',router);
-function goHome(){ location.hash=''; }
+function goHome(){ const v=document.getElementById('view-profile'); if(v)v.classList.remove('on'); if(location.hash) location.hash=''; else router(); }
 function goMessages(){ location.hash='#msg'; }
 function navMessages(){ if(!me){openAuth('login');return;} location.hash='#msg'; }
+function openMyPagePage(){ if(!me){openAuth('login');return;} location.hash='#mypage'; }
+function openNotice(){ location.hash='#notice'; }
+
+/* ---- マイページ（ページ版）---- */
+async function renderMyPagePage(){
+  const box=document.getElementById('mypageBody');
+  const planName={free:'無料',standard:'スタンダード',premium:'プレミアム'}[me.plan]||'無料';
+  let stats={likes:0,foot:0,match:0};
+  try{ const u=await api('/unread'); stats.likes=u.likes||0; stats.foot=u.footprints||0; }catch{}
+  try{ const c=await api('/conversations'); stats.match=(c.items||[]).length; }catch{}
+  const vstat=me.verification_status;
+  const vlabel=vstat==='approved'?'<span style="color:var(--safe)">確認済み ✓</span>':vstat==='pending'?'<span style="color:var(--muted)">審査中</span>':'<span style="color:var(--accent)">未提出</span>';
+  box.innerHTML=`
+    <div class="mp-card">
+      <div class="mp-head">
+        <div class="av" style="background:${grad(me.display_name||'me')}">${avatarHTML(me)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:17px">${esc(me.display_name||'未設定')} <span style="color:var(--muted);font-weight:400">${me.age||''}</span></div>
+          <div class="meta" style="margin:2px 0 0">${esc(me.area||'')}</div>
+          <span class="planpill" style="margin-top:6px">${planName}プラン</span>
+        </div>
+      </div>
+      <div class="mp-stats">
+        <div class="mp-stat"><b>${stats.likes}</b><span>新着いいね</span></div>
+        <div class="mp-stat"><b>${stats.match}</b><span>マッチ</span></div>
+        <div class="mp-stat"><b>${stats.foot}</b><span>新着足あと</span></div>
+      </div>
+      <button class="solid full" onclick="openMyEdit()">プロフィールを編集</button>
+    </div>
+
+    ${me.plan==='free'?`<div class="mp-card" style="background:linear-gradient(135deg,#fff,var(--soft2))">
+      <div style="font-family:'Shippori Mincho',serif;color:var(--anchor);font-size:16px;margin-bottom:4px">メッセージを始めませんか？</div>
+      <p class="note" style="margin:0 0 10px">スタンダードプラン以上で、マッチした相手へメッセージを送れます。</p>
+      <button class="solid full" style="margin:0" onclick="openUpgrade()">プランを見る</button>
+    </div>`:''}
+
+    <button class="mp-link" onclick="pickVerify()"><span class="ic">🪪</span>本人確認<span class="ar">${vlabel} ›</span></button>
+    <button class="mp-link" onclick="enablePush()"><span class="ic">🔔</span>端末通知をオンにする<span class="ar">›</span></button>
+    <button class="mp-link" onclick="openUpgrade()"><span class="ic">✨</span>プラン・料金<span class="ar">›</span></button>
+    <button class="mp-link" onclick="openBlockList()"><span class="ic">🚫</span>ブロックした人を管理<span class="ar">›</span></button>
+    <button class="mp-link" onclick="openNotice()"><span class="ic">📣</span>お知らせ<span class="ar">›</span></button>
+    ${me.is_admin?`<button class="mp-link" onclick="location.href='/admin.html'"><span class="ic">🛠️</span>管理画面<span class="ar">›</span></button>`:''}
+    <button class="mp-link" onclick="doLogout()"><span class="ic">↩️</span>ログアウト<span class="ar">›</span></button>
+    <p class="note" style="text-align:center">ソワレ / SOIRÉE MATCHING</p>`;
+}
+
+/* ---- お知らせ ---- */
+const NOTICES=[
+  {cat:'お知らせ',d:'2026.10.01',t:'プロフィール項目が充実しました',x:'都合の良い時間帯や、婚姻状況・年収などの基本情報を登録できるようになりました。プロフィールを充実させると、マッチしやすくなります。'},
+  {cat:'安心',d:'2026.09.20',t:'本人確認バッジについて',x:'身分証を提出すると、運営の確認後に「本人確認済み」バッジが付きます。安心してつながるため、ぜひご登録ください。'},
+  {cat:'使い方',d:'2026.09.10',t:'身バレ防止（プライベートモード）',x:'ONにすると、あなたが「いいね」した相手にだけプロフィールが表示され、一覧・検索には出なくなります。'}
+];
+function renderNotice(){
+  document.getElementById('noticeBody').innerHTML=NOTICES.map(n=>`
+    <div class="ntc"><div class="d"><span class="cat">${n.cat}</span>${n.d}</div>
+      <div class="t">${esc(n.t)}</div><p class="x">${esc(n.x)}</p></div>`).join('');
+  const b=document.getElementById('noticeBadge'); if(b)b.style.display='none';
+}
 
 /* ---- 会話一覧 ---- */
 function setConvTab(t){
@@ -510,7 +807,7 @@ function showChat(matchId){
   document.getElementById('composerHolder').innerHTML=canSend?`
     <div class="composer"><input id="msgInput" placeholder="メッセージを入力" maxlength="2000"><button class="solid" id="sendBtn">送信</button></div>`:`
     <div class="planbar" onclick="openUpgrade()">メッセージの送信はスタンダードプラン以上でご利用いただけます（タップして詳細）</div>`;
-  document.getElementById('view-chat').classList.add('on');
+  openPage('view-chat');
   if(canSend){
     document.getElementById('sendBtn').onclick=doSend;
     document.getElementById('msgInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229){e.preventDefault();doSend();}});
@@ -625,11 +922,28 @@ async function deleteSelected(){
   exitSelect();
 }
 function openUpgrade(){
-  document.getElementById('pModal').innerHTML=`<h2 class="mincho">スタンダードプランのご案内</h2>
-    <p style="color:var(--muted);margin:12px 0">メッセージの送信はスタンダードプラン以上でご利用いただけます。</p>
-    <button class="solid full" onclick="startCheckout('standard')">スタンダードにアップグレード</button>
-    <button class="ghost full" style="margin-top:8px;border:1px solid var(--line)" onclick="startCheckout('premium')">プレミアムにアップグレード</button>
-    <div class="note">決済はStripeの安全な画面で行われます。</div>`;
+  document.getElementById('pModal').innerHTML=`<h2 class="mincho">プラン・料金</h2>
+    <p class="note" style="margin:6px 0 14px">マッチした相手へのメッセージ送信は、スタンダードプラン以上でご利用いただけます。</p>
+    <div class="plan-card">
+      <h3>スタンダード</h3><div class="price">¥3,980 <small>/ 月</small></div>
+      <ul><li>マッチした相手へメッセージ送り放題</li><li>「いいね」を送れる数が増加</li><li>本人確認済みバッジ対応</li></ul>
+      <button class="solid full" onclick="startCheckout('standard')">スタンダードにする</button>
+    </div>
+    <div class="plan-card hi">
+      <h3>プレミアム <span class="planpill">おすすめ</span></h3><div class="price">¥6,980 <small>/ 月</small></div>
+      <ul><li>スタンダードの全機能</li><li>検索結果で上位に表示</li><li>相手のオンライン状況・足あとを優先表示</li><li>ギャラリー公開枠の拡大</li></ul>
+      <button class="solid full" onclick="startCheckout('premium')">プレミアムにする</button>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:var(--anchor);margin:16px 0 6px">機能比較</div>
+    <table class="cmp"><tr><th>機能</th><th>無料</th><th>標準</th><th>プレ</th></tr>
+      <tr><td>プロフィール閲覧</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>いいねを送る</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>メッセージ送信</td><td class="no">−</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>上位表示</td><td class="no">−</td><td class="no">−</td><td class="yes">✓</td></tr>
+      <tr><td>足あと優先</td><td class="no">−</td><td class="no">−</td><td class="yes">✓</td></tr>
+    </table>
+    <div class="note">決済はStripeの安全な画面で行われます。</div>
+    <button class="ghost full" style="margin-top:10px;border:1px solid var(--line)" onclick="document.getElementById('pScrim').classList.remove('on')">閉じる</button>`;
   document.getElementById('pScrim').classList.add('on');
 }
 async function startCheckout(plan){
@@ -647,17 +961,17 @@ async function pollUnread(){
     if(u.footprints>unreadState.footprints) toast('あなたのプロフィールに足あとが付きました');
     unreadState=u;
     setBadge('msgBadge',u.messages); setBadge('likesBadge',u.likes); setBadge('footBadge',u.footprints||0);
+    const lt=document.getElementById('likesTabBadge'); if(lt){ if(u.likes>0){lt.textContent=u.likes;lt.style.display='';}else lt.style.display='none'; }
+    const ft=document.getElementById('footTabBadge'); if(ft){ if(u.footprints>0){ft.textContent=u.footprints;ft.style.display='';}else ft.style.display='none'; }
     if(document.getElementById('view-messages').classList.contains('on')) loadConversations();
   }catch(e){}
 }
 function setBadge(id,n){ [id,id+'B'].forEach(x=>{const b=document.getElementById(x); if(!b)return; b.textContent=n>99?'99+':n; b.style.display = n>0 ? (b.classList.contains('nbadge')?'grid':'inline-grid') : 'none'; }); }
 function startUnreadPoll(){ pollUnread(); if(!unreadTimer) unreadTimer=setInterval(pollUnread,15000); }
 function stopUnreadPoll(){ if(unreadTimer){clearInterval(unreadTimer);unreadTimer=null;} setBadge('msgBadge',0); setBadge('likesBadge',0); setBadge('footBadge',0); }
-function refreshLikeBadge(){ pollUnread(); }
 
 /* ---- 写真 / 本人確認 ---- */
-function pickPhoto(){toggleMenu(false);document.getElementById('photoInput').click();}
-function pickVerify(){toggleMenu(false);document.getElementById('verifyInput').click();}
+function pickVerify(){document.getElementById('verifyInput').click();}
 document.getElementById('photoInput').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if(!f)return;
   if(f.size>5*1024*1024){toast('5MBまでにしてください');return;}
@@ -665,21 +979,22 @@ document.getElementById('photoInput').onchange=async e=>{
   try{
     await api('/photos/upload',{method:'POST',headers:{'Content-Type':f.type},body:f});
     await loadMe(); await loadProfiles();
-    if(document.getElementById('myScrim').classList.contains('on')){ const pd=await api('/photos/mine'); renderMyPage(pd); }
+    if(document.getElementById('myScrim').classList.contains('on')){ const pd=await api('/photos/mine'); renderMyEdit(pd); }
     toast('写真を追加しました');
   }catch(err){toast(err.message);}
 };
 
-/* ---- マイページ（プロフィール編集）---- */
-async function openMyPage(hint){
-  toggleMenu(false); if(!me)return;
+/* ---- プロフィール編集（モーダル）---- */
+async function openMyEdit(hint){
+  if(!me)return;
   myTags=(me.tags||[]).slice();
   let pd={items:[],main:null};
   try{ pd=await api('/photos/mine'); }catch{}
-  renderMyPage(pd,hint);
+  renderMyEdit(pd,hint);
   document.getElementById('myScrim').classList.add('on');
 }
-function renderMyPage(pd,hint){
+function selOpts(key,cur){ return ['<option value="">未設定</option>'].concat(OPT[key].map(o=>`<option${cur===o?' selected':''}>${o}</option>`)).join(''); }
+function renderMyEdit(pd,hint){
   const photos=pd.items||[];
   const grid=photos.length?`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${photos.map(k=>`
     <div style="position:relative">
@@ -687,8 +1002,11 @@ function renderMyPage(pd,hint){
       ${k===pd.main?'<span style="position:absolute;top:4px;left:4px;background:var(--accent);color:#fff;font-size:10px;padding:2px 6px;border-radius:999px">メイン</span>':`<button onclick="setMainPhoto('${k}')" style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;padding:3px 7px;border-radius:999px;border:none;cursor:pointer">メインに</button>`}
       <button onclick="deletePhoto('${k}')" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;width:22px;height:22px;border-radius:50%;border:none;line-height:1;cursor:pointer">×</button>
     </div>`).join('')}</div>`:'<p class="note">まだ写真がありません。1枚追加するとマッチしやすくなります。</p>';
+  const avail=(me.avail||'').split(',').filter(Boolean);
+  const slotEditor=`<div class="slotgrid" id="slotEditor"><div></div>${SLOT_TM.map(([,l])=>`<div class="hd">${l}</div>`).join('')}${
+    SLOT_DT.map(([dt,dl])=>`<div class="rl">${dl}</div>`+SLOT_TM.map(([tm])=>{const code=dt+'_'+tm;return `<div class="slotcell ${avail.includes(code)?'on':''}" data-code="${code}" onclick="toggleSlot(this)" style="cursor:pointer">${avail.includes(code)?'◯':''}</div>`;}).join('')).join('')}</div>`;
   document.getElementById('myModal').innerHTML=`
-    <h2 class="mincho">マイページ</h2>
+    <h2 class="mincho">プロフィール編集</h2>
     ${hint?'<p class="note" style="color:var(--accent);margin:6px 0 10px">プロフィール写真を追加すると、ぐっとマッチしやすくなります。</p>':''}
     <div style="font-size:12px;color:var(--muted);margin:12px 0 6px">写真（最大6枚・メインが一覧に表示されます）</div>
     ${grid}
@@ -702,41 +1020,58 @@ function renderMyPage(pd,hint){
       <div class="field"><label>年齢</label><input id="myAge" type="number" min="18" value="${me.age||''}"></div></div>
     <div class="field"><label>エリア</label><select id="myArea">${AREAS.map(a=>`<option${me.area===a?' selected':''}>${a}</option>`).join('')}</select></div>
     <div class="field"><label>一言コメント</label><input id="myTag" maxlength="120" value="${esc(me.tagline||'')}"></div>
-    <div class="field"><label>自己紹介</label><textarea id="myBio" rows="4" maxlength="2000" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px;resize:vertical">${esc(me.bio||'')}</textarea></div>
-    <div style="font-size:12px;color:var(--muted);margin:12px 0 6px">趣味・興味タグ（最大15個・相手との共通タグはハイライト表示されます）</div>
+    <div class="field"><label>自己紹介</label><textarea id="myBio" rows="5" maxlength="2000" style="resize:vertical">${esc(me.bio||'')}</textarea></div>
+
+    <div style="font-size:13px;font-weight:600;color:var(--anchor);margin:16px 0 8px">都合の良い時間帯</div>
+    ${slotEditor}
+
+    <div style="font-size:13px;font-weight:600;color:var(--anchor);margin:18px 0 4px">基本情報</div>
+    <div class="field"><label>探している関係</label><select id="myPurpose">${selOpts('purpose',me.purpose)}</select></div>
+    <div class="row2">
+      <div class="field"><label>婚姻状況</label><select id="myMarital">${selOpts('marital',me.marital)}</select></div>
+      <div class="field"><label>子ども</label><select id="myChildren">${selOpts('children',me.children)}</select></div>
+    </div>
+    <div class="field"><label>お仕事</label><input id="myJob" maxlength="40" value="${esc(me.job||'')}" placeholder="例）会社員 / 看護師"></div>
+    <div class="row2">
+      <div class="field"><label>年収</label><select id="myIncome">${selOpts('income',me.income)}</select></div>
+      <div class="field"><label>最終学歴</label><select id="myEducation">${selOpts('education',me.education)}</select></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>身長(cm)</label><input id="myHeight" type="number" min="130" max="230" value="${me.height||''}"></div>
+      <div class="field"><label>体型</label><select id="myBody">${selOpts('body_type',me.body_type)}</select></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>お酒</label><select id="myDrink">${selOpts('drinking',me.drinking)}</select></div>
+      <div class="field"><label>タバコ</label><select id="mySmoke">${selOpts('smoking',me.smoking)}</select></div>
+    </div>
+    <div class="field"><label>休日</label><select id="myHoliday">${selOpts('holiday',me.holiday)}</select></div>
+
+    <div style="font-size:12px;color:var(--muted);margin:16px 0 6px">趣味・興味タグ（最大15個・相手との共通タグはハイライト表示されます）</div>
     <div id="tagArea"></div>
-    <div style="margin-top:6px;padding:12px;border:1px solid var(--line);border-radius:10px">
+    <div style="margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:10px">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--ink)">
         <input type="checkbox" id="myPrivate" ${me.private_mode?'checked':''} style="width:auto" onchange="togglePrivacy(this.checked)">
         身バレ防止（プライベートモード）
       </label>
       <div class="note" style="margin-top:4px">ONにすると、あなたが「いいね」した相手にだけプロフィールが表示され、一覧・検索には出なくなります。</div>
     </div>
-    <button class="ghost full" style="border:1px solid var(--line);margin-top:8px" onclick="openBlockList()">ブロックした人を管理</button>
-    <div style="margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:10px">
-      <div style="font-size:13px;font-weight:600;margin-bottom:4px">本人確認</div>
-      ${me.verification_status==='approved'
-        ? '<div style="color:var(--safe);font-size:14px">確認済み ✓（プロフィールにバッジが表示されます）</div>'
-        : me.verification_status==='pending'
-        ? '<div class="note" style="margin:0">審査中です。数日以内に確認し、承認されると「本人確認済み」バッジが付きます。</div>'
-        : `<div class="note" style="margin:0 0 6px">${me.verification_status==='rejected'?'前回の申請は承認されませんでした。もう一度お試しください。':'身分証を提出すると、運営が確認後に「本人確認済み」バッジを付与します。'}</div>
-           <button class="ghost full" style="border:1px solid var(--line)" onclick="pickVerify()">本人確認を申請する（身分証を提出）</button>`}
-    </div>
     <div class="err" id="myErr" style="margin-top:10px"></div>
-    <button class="solid full" onclick="saveMyPage()">保存する</button>
+    <button class="solid full" onclick="saveMyEdit()">保存する</button>
     <button class="ghost full" style="margin-top:6px" onclick="document.getElementById('myScrim').classList.remove('on')">閉じる</button>`;
   renderTags();
 }
+function toggleSlot(el){ el.classList.toggle('on'); el.textContent=el.classList.contains('on')?'◯':''; }
+function collectAvail(){ return [...document.querySelectorAll('#slotEditor .slotcell.on')].map(c=>c.dataset.code).join(','); }
 function renderTags(){
   const area=document.getElementById('tagArea'); if(!area)return;
-  const preset=PRESET_TAGS.map(t=>`<span class="chip ${myTags.includes(t)?'on':''}" onclick="toggleTag('${t}')">${t}</span>`).join('');
+  const preset=PRESET_TAGS.map(t=>`<span class="chip ${myTags.includes(t)?'on':''}" onclick="toggleTag('${t}')">${TAG_EMOJI[t]?TAG_EMOJI[t]+' ':''}${t}</span>`).join('');
   const custom=myTags.filter(t=>!PRESET_TAGS.includes(t)).map(t=>`<span class="chip on" onclick="toggleTag('${t}')">${esc(t)} ✕</span>`).join('');
   area.innerHTML=`<div style="margin-bottom:8px">${preset}${custom}</div>
     <div style="display:flex;gap:8px"><input id="tagInput" placeholder="自由に追加" maxlength="20" style="flex:1;padding:9px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px"><button class="ghost" style="border:1px solid var(--line)" onclick="addCustomTag()">追加</button></div>`;
 }
 function toggleTag(t){ const i=myTags.indexOf(t); if(i>=0)myTags.splice(i,1); else{ if(myTags.length>=15){toast('タグは15個までです');return;} myTags.push(t);} renderTags(); }
 function addCustomTag(){ const el=document.getElementById('tagInput'); let t=(el.value||'').trim().replace(/['"\\<>]/g,''); if(!t)return; if(!myTags.includes(t)){ if(myTags.length>=15){toast('タグは15個までです');return;} myTags.push(t);} el.value=''; renderTags(); }
-async function saveMyPage(){
+async function saveMyEdit(){
   const err=document.getElementById('myErr'); err.textContent='';
   try{
     await jpost('/profile/update',{
@@ -745,14 +1080,26 @@ async function saveMyPage(){
       age:document.getElementById('myAge').value,
       area:document.getElementById('myArea').value,
       tagline:document.getElementById('myTag').value.trim(),
-      bio:document.getElementById('myBio').value.trim()});
+      bio:document.getElementById('myBio').value.trim(),
+      purpose:document.getElementById('myPurpose').value,
+      marital:document.getElementById('myMarital').value,
+      children:document.getElementById('myChildren').value,
+      job:document.getElementById('myJob').value.trim(),
+      income:document.getElementById('myIncome').value,
+      education:document.getElementById('myEducation').value,
+      height:document.getElementById('myHeight').value,
+      body_type:document.getElementById('myBody').value,
+      drinking:document.getElementById('myDrink').value,
+      smoking:document.getElementById('mySmoke').value,
+      holiday:document.getElementById('myHoliday').value,
+      avail:collectAvail()});
     await jpost('/tags/set',{tags:myTags});
     document.getElementById('myScrim').classList.remove('on');
-    await loadMe(); await loadProfiles(); toast('プロフィールを更新しました');
+    await loadMe(); await loadProfiles(); if(location.hash==='#mypage')renderMyPagePage(); toast('プロフィールを更新しました');
   }catch(e){ err.textContent=e.message; }
 }
-async function setMainPhoto(k){ try{await jpost('/photos/main',{key:k});await loadMe();const pd=await api('/photos/mine');renderMyPage(pd);await loadProfiles();toast('メイン写真を変更しました');}catch(e){toast(e.message);} }
-async function deletePhoto(k){ if(!confirm('この写真を削除しますか？'))return; try{await jpost('/photos/delete',{key:k});await loadMe();const pd=await api('/photos/mine');renderMyPage(pd);await loadProfiles();toast('写真を削除しました');}catch(e){toast(e.message);} }
+async function setMainPhoto(k){ try{await jpost('/photos/main',{key:k});await loadMe();const pd=await api('/photos/mine');renderMyEdit(pd);await loadProfiles();toast('メイン写真を変更しました');}catch(e){toast(e.message);} }
+async function deletePhoto(k){ if(!confirm('この写真を削除しますか？'))return; try{await jpost('/photos/delete',{key:k});await loadMe();const pd=await api('/photos/mine');renderMyEdit(pd);await loadProfiles();toast('写真を削除しました');}catch(e){toast(e.message);} }
 async function togglePrivacy(on){ try{await jpost('/privacy',{private_mode:on?1:0});me.private_mode=on?1:0;await loadProfiles();toast(on?'身バレ防止をONにしました':'身バレ防止をOFFにしました');}catch(e){toast(e.message);} }
 async function openBlockList(){
   try{ const {items}=await api('/blocks');
@@ -764,7 +1111,6 @@ async function openBlockList(){
       </div>`).join(''):'<p class="note">ブロックした人はいません。</p>';
     document.getElementById('pModal').innerHTML=`<h2 class="mincho">ブロックした人</h2><div style="margin-top:10px">${list}</div>
       <button class="ghost full" style="margin-top:12px;border:1px solid var(--line)" onclick="document.getElementById('pScrim').classList.remove('on')">閉じる</button>`;
-    document.getElementById('myScrim').classList.remove('on');
     document.getElementById('pScrim').classList.add('on');
   }catch(e){ toast(e.message); }
 }
@@ -773,7 +1119,7 @@ document.getElementById('verifyInput').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if(!f)return;
   if(f.size>8*1024*1024){toast('8MBまでにしてください');return;}
   toast('送信中…');
-  try{await api('/verify',{method:'POST',headers:{'Content-Type':f.type},body:f});toast('本人確認を申請しました（審査中）');}
+  try{await api('/verify',{method:'POST',headers:{'Content-Type':f.type},body:f});toast('本人確認を申請しました（審査中）');await loadMe();if(location.hash==='#mypage')renderMyPagePage();}
   catch(err){toast(err.message);}
 };
 
@@ -795,7 +1141,7 @@ async function submitOnboard(){
   const err=document.getElementById('oErr'); err.textContent='';
   try{ await jpost('/onboard',{display_name:v('oName'),gender:v('oGender'),age:v('oAge'),area:v('oArea')});
     document.getElementById('onboardScrim').classList.remove('on'); await loadMe(); await loadProfiles(); toast('ようこそ');
-    if(me && !me.photo_key) openMyPage(true);
+    if(me && !me.photo_key) openMyEdit(true);
   }catch(e){ err.textContent=e.message; }
 }
 
@@ -824,14 +1170,13 @@ async function submitAuth(isSignup){
   const body={email:v('aEmail'),password:v('aPass')};
   if(isSignup)Object.assign(body,{display_name:v('aName'),gender:v('aGender'),age:v('aAge'),area:v('aArea')});
   try{await jpost(isSignup?'/signup':'/login',body);closeModals();await loadMe();await loadProfiles();toast('ようこそ');
-    if(isSignup && me && !me.photo_key) openMyPage(true);}
+    if(isSignup && me && !me.photo_key) openMyEdit(true);}
   catch(e){err.textContent=e.message;}
 }
 const v=id=>document.getElementById(id).value.trim();
-async function doLogout(){toggleMenu(false);try{await jpost('/logout',{});}catch{} me=null;renderAuthState();goHome();loadProfiles();toast('ログアウトしました');}
+async function doLogout(){try{await jpost('/logout',{});}catch{} me=null;renderAuthState();goHome();loadProfiles();toast('ログアウトしました');}
 function urlB64ToUint8Array(b64){ const pad='='.repeat((4-b64.length%4)%4); const s=(b64+pad).replace(/-/g,'+').replace(/_/g,'/'); const raw=atob(s); const arr=new Uint8Array(raw.length); for(let i=0;i<raw.length;i++)arr[i]=raw.charCodeAt(i); return arr; }
 async function enablePush(){
-  toggleMenu(false);
   if(!me){openAuth('login');return;}
   if(!('serviceWorker'in navigator)||!('PushManager'in window)||!('Notification'in window)){ toast('この端末/ブラウザは通知に対応していません'); return; }
   try{
@@ -852,19 +1197,13 @@ async function enablePush(){
 /* ---- 共通 ---- */
 function closeModals(){ document.querySelectorAll('.scrim').forEach(s=>{ if(s.id!=='onboardScrim') s.classList.remove('on'); }); }
 document.querySelectorAll('.scrim').forEach(s=>s.onclick=e=>{if(e.target===s&&s.id!=='onboardScrim')s.classList.remove('on');});
-function toggleMenu(on){document.getElementById('acctMenu').classList.toggle('on',on);}
 document.getElementById('loginBtn').onclick=()=>openAuth('login');
-document.getElementById('msgBtn').onclick=navMessages;
-document.getElementById('likesBtn').onclick=openLikes;
-document.getElementById('footBtn').onclick=openFootprints;
+document.getElementById('signupBtn').onclick=()=>openAuth('signup');
 document.getElementById('chatMenuBtn').onclick=openChatMenu;
 document.getElementById('chatMenuScrim').onclick=e=>{ if(e.target.id==='chatMenuScrim') closeChatMenu(); };
 document.getElementById('msgs').addEventListener('click',e=>{ if(!selecting)return; const w=e.target.closest('.bwrap.me'); if(!w)return; w.classList.toggle('sel'); updateSelCnt(); });
-document.getElementById('signupBtn').onclick=()=>{ if(me) toggleMenu(!document.getElementById('acctMenu').classList.contains('on')); else openAuth('signup'); };
-document.addEventListener('click',e=>{ if(!e.target.closest('#acctMenu')&&e.target.id!=='signupBtn') toggleMenu(false); });
 
 (async()=>{
-  document.getElementById('fArea').insertAdjacentHTML('beforeend', AREAS.map(a=>`<option>${a}</option>`).join(''));
   await loadMe(); loadProfiles();
   if(me && me.needs_onboarding) openOnboard();
   const sp=new URLSearchParams(location.search);
