@@ -735,8 +735,8 @@ async function likeBack(to){
 function openPage(id){ document.getElementById(id).classList.add('on'); document.body.style.overflow='hidden'; }
 async function router(){
   const h=location.hash;
-  ['view-messages','view-chat','view-search','view-likes','view-mypage','view-notice'].forEach(id=>document.getElementById(id).classList.remove('on'));
-  // プロフィール詳細は独自管理（ハッシュを持たない）
+  ['view-messages','view-chat','view-search','view-likes','view-mypage','view-notice','view-profile'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  closePfMenu();
   stopChatPoll(); exitSelect(); closeChatMenu();
   if(h.startsWith('#chat=')){
     if(!me){location.hash='';return;}
