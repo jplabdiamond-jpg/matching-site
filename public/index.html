@@ -257,9 +257,9 @@
   #view-profile .pbody{max-width:600px;margin:0 auto;width:100%}
   .pf-hero{width:100%;max-width:340px;margin:16px auto 2px;aspect-ratio:4/5;max-height:none;border-radius:18px}
   .pf-thumbs{justify-content:center}
-  .pf-actions{max-width:600px;margin:0 auto;background:linear-gradient(to top,var(--bg) 72%,transparent)}
-  /* keep the いいね button clear of the bottom nav */
-  body.authed #view-profile{bottom:calc(62px + env(safe-area-inset-bottom))}
+  .pf-actions{max-width:600px;margin:0 auto;background:linear-gradient(to top,var(--bg) 60%,transparent)}
+  /* keep the いいね button clear of the bottom nav (page still covers full screen) */
+  body.authed .pf-actions{padding-bottom:calc(16px + 62px + env(safe-area-inset-bottom))}
   /* --- other full pages: readable width on desktop --- */
   .page .pbody.pad{max-width:660px;margin:0 auto;width:100%}
   #view-messages .convlist{max-width:660px;margin:0 auto;width:100%}
