@@ -27,8 +27,9 @@ bucket_name = "matching-photos"
 [vars]
 APP_URL = "https://matching-site.jp-lab-diamond.workers.dev"
 # Stripe の price ID（ダッシュボードで作成した月額サブスク）
-STRIPE_PRICE_STANDARD = "price_1UPE9TE3wzB3B1Hb1mD6LomK"
-STRIPE_PRICE_PREMIUM  = "price_1UPEAdE3wzB3B1HbglMPcXsT"
+# TODO: maching アカウントの本番有効化後、maching で作成した price ID に置き換える
+STRIPE_PRICE_STANDARD = "price_xxx_standard"
+STRIPE_PRICE_PREMIUM  = "price_xxx_premium"
 
 # シークレットはコミットしない。以下で登録：
 #   wrangler secret put STRIPE_SECRET_KEY
