@@ -1,10 +1,10 @@
-// ソワレ Service Worker — Web Push（軽量プッシュ方式）
+// Re-Lovers Service Worker — Web Push（軽量プッシュ方式）
 self.addEventListener('install', (e) => { self.skipWaiting(); });
 self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
 
 self.addEventListener('push', (event) => {
   event.waitUntil((async () => {
-    let title = 'ソワレ';
+    let title = 'Re-Lovers';
     let body = '新しい通知があります';
     try {
       const r = await fetch('/api/unread', { credentials: 'include' });

@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>ソワレ — 同じ立場で出会うマッチング</title>
+<title>Re-Lovers（リラバーズ） — 同じ立場で出会うマッチング</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#5C2A45">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="ソワレ">
+<meta name="apple-mobile-web-app-title" content="Re-Lovers">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -268,7 +268,7 @@
 <body>
 <header>
   <div class="bar">
-    <div class="brand" onclick="goHome()" style="cursor:pointer">ソワレ<small>SOIRÉE MATCHING</small></div>
+    <div class="brand" onclick="goHome()" style="cursor:pointer">Re-Lovers<small>リラバーズ</small></div>
     <div class="spacer"></div>
     <button class="bell" id="bellBtn" style="display:none" onclick="openNotice()"><span data-ic="bell"></span><span class="hbadge" id="noticeBadge" style="display:none">0</span></button>
     <button class="hdname" id="hdAcct" style="display:none" onclick="openMyPagePage()"><span class="av" id="hdAv"></span><span id="hdNameTxt"></span></button>
@@ -806,7 +806,7 @@ async function renderMyPagePage(){
     <button class="mp-link" onclick="openNotice()"><span class="ic">${svg('info')}</span>お知らせ<span class="ar">›</span></button>
     ${me.is_admin?`<button class="mp-link" onclick="location.href='/admin.html'"><span class="ic">${svg('tool')}</span>管理画面<span class="ar">›</span></button>`:''}
     <button class="mp-link" onclick="doLogout()"><span class="ic">${svg('logout')}</span>ログアウト<span class="ar">›</span></button>
-    <p class="note" style="text-align:center">ソワレ / SOIRÉE MATCHING</p>`;
+    <p class="note" style="text-align:center">Re-Lovers（リラバーズ）</p>`;
   // 統計は枠の描画後に非同期で差し込む（初回の空白を防ぐ）
   (async()=>{
     let likes=0,foot=0,match=0;
