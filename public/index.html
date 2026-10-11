@@ -245,7 +245,7 @@
   .toast.on{opacity:1}
   /* --- bordeaux line icons --- */
   .ic-svg{width:1.15em;height:1.15em;display:inline-block;vertical-align:-.22em;flex:none}
-  .pf-row .k{width:8.5em}
+  .pf-row .k{width:9.5em;word-break:keep-all;line-height:1.35}
   .pf-row .k .ic-svg{color:var(--anchor)}
   .pf-sec h3 .ic-svg{color:var(--anchor);width:1.1em;height:1.1em;vertical-align:-.16em}
   .botnav .ic .ic-svg{width:23px;height:23px}
@@ -342,8 +342,9 @@
 
 <!-- プロフィール詳細 -->
 <section class="page" id="view-profile">
-  <div class="pbar"><button class="back" onclick="closeProfile()">←</button><h2>プロフィール</h2></div>
+  <div class="pbar"><button class="back" onclick="closeProfile()">←</button><h2>プロフィール</h2><div class="spacer"></div><button class="iconbtn" id="pfMenuBtn" style="display:none" title="メニュー">⋯</button></div>
   <div class="pbody" id="profileBody"></div>
+  <div class="cmenu-scrim" id="pfMenuScrim"><div class="cmenu" id="pfMenu"></div></div>
 </section>
 
 <!-- マイページ -->
@@ -565,7 +566,7 @@ function renderSearch(){
   document.getElementById('searchBody').innerHTML=`
     <div class="srch-input">
       <input id="sQ" placeholder="キーワード（名前・自己紹介）" value="${esc(searchF.q)}">
-      <button class="solid" onclick="applySearch()">さがす</button>
+      <button class="solid" onclick="applySearch()" aria-label="さがす" style="padding:11px 15px">${svg('search')}</button>
     </div>
     <div class="fblock"><div class="fl">エリア</div>
       <select id="sArea" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px;background:#fff">${areaOpts}</select>
@@ -584,7 +585,7 @@ function renderSearch(){
       </div>
     </div>
     <div class="fblock"><div class="fl">やりたいこと・興味でさがす</div>
-      <div class="tgrid">${PRESET_TAGS.map(t=>`<button onclick="filterByTag('${t}')"><span class="em">${svg('tag')}</span>${esc(t)}</button>`).join('')}</div>
+      <div class="tgrid">${PRESET_TAGS.map(t=>`<button onclick="filterByTag('${t}')">${esc(t)}</button>`).join('')}</div>
     </div>
     <button class="solid full" style="margin-top:4px" onclick="applySearch()">この条件でさがす</button>`;
 }
@@ -641,24 +642,42 @@ function renderProfile(p){
   const tagSec=(p.tags&&p.tags.length)?`<div class="pf-sec"><h3>${svg('tag')} 興味・関心</h3><div class="tagwrap">${p.tags.map(t=>`<span class="chip ${me&&me.tags&&me.tags.includes(t)?'common':''}" onclick="filterByTag('${t}')">${esc(t)}</span>`).join('')}</div></div>`:'';
   const own=me&&me.id===p.user_id;
   const actions=own?'':`<div class="pf-actions">
-      <button class="mini" onclick="blockFromProfile('${p.user_id}')" title="ブロック">${svg('ban')}</button>
       <button class="like" id="likeBtn">${svg('heart')} いいねを送る</button>
     </div>`;
   document.getElementById('profileBody').innerHTML=`
     <div class="pf-hero">${hero}${act}${vb}</div>
     ${thumbs}
     <div class="pf-sec"><h3 style="margin:0"><span class="pf-name mincho">${esc(p.display_name)}<span>${p.age}歳・${esc(p.area||'')}</span></span></h3>
-      ${p.tagline?`<p class="mincho" style="color:#6a5d64;margin:10px 0 0;font-size:15px">${esc(p.tagline)}</p>`:''}</div>
+      ${p.tagline?`<p class="mincho" style="color:#6a5d64;margin:10px 0 0;font-size:15px">${esc(p.tagline)}</p>`:''}
+      ${[p.purpose,p.marital].filter(Boolean).length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${[p.purpose,p.marital].filter(Boolean).map(s=>`<span class="chip" style="margin:0;cursor:default;font-size:12px;padding:4px 11px">${esc(s)}</span>`).join('')}</div>`:''}</div>
     ${bioSec}${slotSec}${attrSec}${tagSec}
     <div style="height:8px"></div>
     ${actions}`;
   openPage('view-profile');
   document.getElementById('profileBody').scrollTop=0;
   const lb=document.getElementById('likeBtn'); if(lb) lb.onclick=()=>sendLike(p.user_id);
+  const mb=document.getElementById('pfMenuBtn');
+  if(own){ mb.style.display='none'; }
+  else{
+    mb.style.display='';
+    document.getElementById('pfMenu').innerHTML=`
+      <button onclick="reportFromProfile('${p.user_id}')">通報する</button>
+      <button class="danger" onclick="blockFromProfile('${p.user_id}')">ブロックする</button>
+      <button onclick="closePfMenu()">キャンセル</button>`;
+    mb.onclick=()=>document.getElementById('pfMenuScrim').classList.add('on');
+  }
+}
+function closePfMenu(){ const s=document.getElementById('pfMenuScrim'); if(s)s.classList.remove('on'); }
+async function reportFromProfile(id){
+  closePfMenu();
+  const reason=prompt('通報の理由（任意）'); if(reason===null)return;
+  try{ await jpost('/report',{target_id:id,reason}); toast('通報しました。ご協力ありがとうございます'); }
+  catch(e){ toast(e.message); }
 }
 function pfSwap(src,el){ const m=document.getElementById('pfMain'); if(m)m.src=src; document.querySelectorAll('.pf-thumbs img').forEach(i=>i.classList.remove('sel')); el.classList.add('sel'); }
-function closeProfile(){ const v=document.getElementById('view-profile'); v.classList.remove('on'); if(!anyPageOpen()) document.body.style.overflow=''; syncNavFromHash(); }
+function closeProfile(){ closePfMenu(); const v=document.getElementById('view-profile'); v.classList.remove('on'); if(!anyPageOpen()) document.body.style.overflow=''; syncNavFromHash(); }
 async function blockFromProfile(id){
+  closePfMenu();
   if(!confirm('この相手をブロックしますか？今後お互いに表示されなくなります。'))return;
   try{ await jpost('/block',{target_id:id}); closeProfile(); await loadProfiles(); await pollUnread(); toast('ブロックしました'); }
   catch(e){ toast(e.message); }
@@ -754,9 +773,6 @@ function openNotice(){ location.hash='#notice'; }
 async function renderMyPagePage(){
   const box=document.getElementById('mypageBody');
   const planName={free:'無料',standard:'スタンダード',premium:'プレミアム'}[me.plan]||'無料';
-  let stats={likes:0,foot:0,match:0};
-  try{ const u=await api('/unread'); stats.likes=u.likes||0; stats.foot=u.footprints||0; }catch{}
-  try{ const c=await api('/conversations'); stats.match=(c.items||[]).length; }catch{}
   const vstat=me.verification_status;
   const vlabel=vstat==='approved'?'<span style="color:var(--safe)">確認済み ✓</span>':vstat==='pending'?'<span style="color:var(--muted)">審査中</span>':'<span style="color:var(--accent)">未提出</span>';
   box.innerHTML=`
@@ -770,9 +786,9 @@ async function renderMyPagePage(){
         </div>
       </div>
       <div class="mp-stats">
-        <div class="mp-stat"><b>${stats.likes}</b><span>新着いいね</span></div>
-        <div class="mp-stat"><b>${stats.match}</b><span>マッチ</span></div>
-        <div class="mp-stat"><b>${stats.foot}</b><span>新着足あと</span></div>
+        <div class="mp-stat"><b id="mpLikes">–</b><span>新着いいね</span></div>
+        <div class="mp-stat"><b id="mpMatch">–</b><span>マッチ</span></div>
+        <div class="mp-stat"><b id="mpFoot">–</b><span>新着足あと</span></div>
       </div>
       <button class="solid full" onclick="openMyEdit()">プロフィールを編集</button>
     </div>
@@ -791,6 +807,14 @@ async function renderMyPagePage(){
     ${me.is_admin?`<button class="mp-link" onclick="location.href='/admin.html'"><span class="ic">${svg('tool')}</span>管理画面<span class="ar">›</span></button>`:''}
     <button class="mp-link" onclick="doLogout()"><span class="ic">${svg('logout')}</span>ログアウト<span class="ar">›</span></button>
     <p class="note" style="text-align:center">ソワレ / SOIRÉE MATCHING</p>`;
+  // 統計は枠の描画後に非同期で差し込む（初回の空白を防ぐ）
+  (async()=>{
+    let likes=0,foot=0,match=0;
+    try{ const u=await api('/unread'); likes=u.likes||0; foot=u.footprints||0; }catch{}
+    try{ const c=await api('/conversations'); match=(c.items||[]).length; }catch{}
+    const set=(id,v)=>{ const el=document.getElementById(id); if(el)el.textContent=v; };
+    set('mpLikes',likes); set('mpMatch',match); set('mpFoot',foot);
+  })();
 }
 
 /* ---- お知らせ ---- */
@@ -1251,6 +1275,7 @@ document.getElementById('loginBtn').onclick=()=>openAuth('login');
 document.getElementById('signupBtn').onclick=()=>openAuth('signup');
 document.getElementById('chatMenuBtn').onclick=openChatMenu;
 document.getElementById('chatMenuScrim').onclick=e=>{ if(e.target.id==='chatMenuScrim') closeChatMenu(); };
+document.getElementById('pfMenuScrim').onclick=e=>{ if(e.target.id==='pfMenuScrim') closePfMenu(); };
 document.getElementById('msgs').addEventListener('click',e=>{ if(!selecting)return; const w=e.target.closest('.bwrap.me'); if(!w)return; w.classList.toggle('sel'); updateSelCnt(); });
 
 document.querySelectorAll('[data-ic]').forEach(e=>e.innerHTML=svg(e.dataset.ic));
