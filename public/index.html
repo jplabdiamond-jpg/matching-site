@@ -66,7 +66,8 @@
   /* modals */
   .scrim{position:fixed;inset:0;background:rgba(44,36,48,.5);backdrop-filter:blur(2px);display:none;place-items:center;z-index:70;padding:20px}
   .scrim.on{display:grid}
-  .modal{background:var(--surface);border-radius:20px;max-width:460px;width:100%;padding:26px;box-shadow:0 20px 60px rgba(44,36,48,.25);max-height:88vh;overflow:auto}
+  .modal{background:var(--surface);border-radius:20px;max-width:460px;width:100%;padding:26px;box-shadow:0 20px 60px rgba(44,36,48,.25);max-height:88vh;overflow:auto;position:relative}
+  .mclose{position:absolute;top:14px;right:14px;background:transparent;border:none;font-size:26px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 8px;z-index:2}
   .modal h2{font-family:"Shippori Mincho",serif;font-weight:500;margin:0 0 4px;color:var(--anchor)}
   .big{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;margin:6px 0 14px;overflow:hidden;position:relative}
   .big .ini{font-family:"Shippori Mincho",serif;font-size:38px;color:#fff}
@@ -151,6 +152,7 @@
   /* bottom nav (5 tabs) */
   .botnav{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--surface);border-top:1px solid var(--line);display:none}
   body.authed .botnav{display:flex}
+  body.chat-open .botnav{display:none}
   .botnav button{flex:1;background:transparent;border:none;border-radius:0;padding:7px 2px calc(7px + env(safe-area-inset-bottom));font-size:10px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
   .botnav button.active{color:var(--anchor)}
   .botnav .ic{font-size:20px;line-height:1}
@@ -523,7 +525,7 @@ function buildQS(){
   if(tagFilter)qs.set('tag',tagFilter);
   return qs;
 }
-let searchF={area:'',min:'',max:'',q:'',sort:'active',verified:false,online:false};
+let searchF={area:'',min:'',max:'',q:'',sort:'active',verified:false,online:false,_tag:''};
 async function loadProfiles(reset=true){
   if(expState.loading)return;
   if(reset){ expState={offset:0,loading:false,done:false}; document.getElementById('grid').innerHTML=''; }
@@ -561,6 +563,7 @@ function openSearch(){
   if(location.hash!=='#search') location.hash='#search';
 }
 function renderSearch(){
+  searchF._tag = tagFilter || '';
   const areaOpts=['<option value="">エリアすべて</option>'].concat(AREAS.map(a=>`<option${searchF.area===a?' selected':''}>${a}</option>`)).join('');
   const ageSeg=[['','指定なし'],['20,29','20代'],['30,39','30代'],['40,49','40代'],['50,120','50代以上']];
   const curAge=searchF.min?`${searchF.min},${searchF.max}`:'';
@@ -586,18 +589,19 @@ function renderSearch(){
       </div>
     </div>
     <div class="fblock"><div class="fl">やりたいこと・興味でさがす</div>
-      <div class="tgrid">${PRESET_TAGS.map(t=>`<button onclick="filterByTag('${t}')">${esc(t)}</button>`).join('')}</div>
+      <div class="tgrid">${PRESET_TAGS.map(t=>`<button class="${searchF._tag===t?'on':''}" onclick="pickSearchTag('${t}',this)">${esc(t)}</button>`).join('')}</div>
     </div>
     <button class="solid full" style="margin-top:4px" onclick="applySearch()">この条件でさがす</button>`;
 }
 function pickAge(v,el){ document.querySelectorAll('#sAgeSeg button').forEach(b=>b.classList.remove('on')); el.classList.add('on'); el.dataset._p=v; searchF._age=v; }
+function pickSearchTag(t,el){ const was=searchF._tag===t; document.querySelectorAll('#searchBody .tgrid button').forEach(b=>b.classList.remove('on')); if(was){ searchF._tag=''; } else { searchF._tag=t; el.classList.add('on'); } }
 function applySearch(){
   searchF.q=(document.getElementById('sQ')?.value||'').trim();
   searchF.area=document.getElementById('sArea')?.value||'';
   const ageSel=document.querySelector('#sAgeSeg button.on');
   const av=ageSel?ageSel.dataset.age:'';
   [searchF.min,searchF.max]=av?av.split(','):['',''];
-  tagFilter=null; renderTagBar();
+  tagFilter=searchF._tag||null; renderTagBar();
   goHome(); loadProfiles(true); window.scrollTo(0,0);
 }
 
@@ -737,6 +741,7 @@ function openPage(id){ document.getElementById(id).classList.add('on'); document
 async function router(){
   const h=location.hash;
   ['view-messages','view-chat','view-search','view-likes','view-mypage','view-notice','view-profile'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  document.body.classList.toggle('chat-open', h.startsWith('#chat='));
   closePfMenu();
   stopChatPoll(); exitSelect(); closeChatMenu();
   if(h.startsWith('#chat=')){
@@ -1081,6 +1086,7 @@ function renderMyEdit(pd,hint){
   const slotEditor=`<div class="slotgrid" id="slotEditor"><div></div>${SLOT_TM.map(([,l])=>`<div class="hd">${l}</div>`).join('')}${
     SLOT_DT.map(([dt,dl])=>`<div class="rl">${dl}</div>`+SLOT_TM.map(([tm])=>{const code=dt+'_'+tm;return `<div class="slotcell ${avail.includes(code)?'on':''}" data-code="${code}" onclick="toggleSlot(this)" style="cursor:pointer">${avail.includes(code)?'◯':''}</div>`;}).join('')).join('')}</div>`;
   document.getElementById('myModal').innerHTML=`
+    <button class="mclose" onclick="document.getElementById('myScrim').classList.remove('on')" aria-label="閉じる">×</button>
     <h2 class="mincho">プロフィール編集</h2>
     ${hint?'<p class="note" style="color:var(--accent);margin:6px 0 10px">プロフィール写真を追加すると、ぐっとマッチしやすくなります。</p>':''}
     <div style="font-size:12px;color:var(--muted);margin:12px 0 6px">写真（最大6枚・メインが一覧に表示されます）</div>
@@ -1272,6 +1278,7 @@ async function enablePush(){
 /* ---- 共通 ---- */
 function closeModals(){ document.querySelectorAll('.scrim').forEach(s=>{ if(s.id!=='onboardScrim') s.classList.remove('on'); }); }
 document.querySelectorAll('.scrim').forEach(s=>s.onclick=e=>{if(e.target===s&&s.id!=='onboardScrim')s.classList.remove('on');});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModals();});
 document.getElementById('loginBtn').onclick=()=>openAuth('login');
 document.getElementById('signupBtn').onclick=()=>openAuth('signup');
 document.getElementById('chatMenuBtn').onclick=openChatMenu;

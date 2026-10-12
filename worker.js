@@ -4,9 +4,9 @@
 // ============================================================
 
 const PLANS = {
-  free:     { messaging: false, seeLikes: false },
-  standard: { messaging: true,  seeLikes: false },
-  premium:  { messaging: true,  seeLikes: true  },
+  free:     { messaging: false },
+  standard: { messaging: true  },
+  premium:  { messaging: true  },
 };
 
 export default {
