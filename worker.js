@@ -8,6 +8,8 @@ const PLANS = {
   standard: { messaging: true  },
   premium:  { messaging: true  },
 };
+// 「あなたに興味があるユーザー」判定: 閲覧2回以上 または 滞在5秒以上
+const INTEREST_VISITS = 2, INTEREST_DWELL_MS = 5000;
 
 export default {
   async fetch(request, env, ctx) {
@@ -36,6 +38,8 @@ async function route(request, env, url, ctx) {
   if (p === '/api/matches'  && m === 'GET')  return listMatches(request, env);
   if (p === '/api/likes/received' && m === 'GET') return likesReceived(request, env);
   if (p === '/api/footprints'     && m === 'GET') return footprints(request, env);
+  if (p === '/api/interested'     && m === 'GET') return interested(request, env);
+  if (p === '/api/view/dwell'     && m === 'POST') return recordDwell(request, env);
   if (p === '/api/conversations'  && m === 'GET') return conversations(request, env);
   if (p === '/api/unread'         && m === 'GET') return unread(request, env);
   if (p === '/api/read'           && m === 'POST') return markRead(request, env);
@@ -360,7 +364,7 @@ async function profileOne(request, env, url) {
   if (uid && uid !== id) {
     await env.DB.prepare(
       `INSERT INTO footprints (viewer_id,owner_id,last_at) VALUES (?,?,?)
-       ON CONFLICT(viewer_id,owner_id) DO UPDATE SET last_at=excluded.last_at`)
+       ON CONFLICT(viewer_id,owner_id) DO UPDATE SET last_at=excluded.last_at, cnt=cnt+1`)
       .bind(uid, id, Date.now()).run();
   }
   const ph = await env.DB.prepare('SELECT key FROM profile_photos WHERE user_id=? ORDER BY created_at ASC').bind(id).all();
@@ -383,6 +387,39 @@ async function footprints(request, env) {
      ORDER BY f.last_at DESC LIMIT 100`).bind(uid, uid, uid).all();
   await env.DB.prepare('UPDATE profiles SET footprints_seen_at=? WHERE user_id=?').bind(Date.now(), uid).run();
   return json({ items: rows.results });
+}
+
+// プロフィール滞在時間を記録（最長値を保持）
+async function recordDwell(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  let body = {};
+  try { body = await request.json(); } catch {}
+  const owner = body.owner_id;
+  let ms = Number(body.ms);
+  if (!owner || owner === uid || !Number.isFinite(ms)) return json({ ok: false });
+  ms = Math.max(0, Math.min(Math.round(ms), 3600000)); // 上限1時間でクランプ
+  await env.DB.prepare(
+    `UPDATE footprints SET dwell_ms=MAX(dwell_ms,?) WHERE viewer_id=? AND owner_id=?`)
+    .bind(ms, uid, owner).run();
+  return json({ ok: true });
+}
+
+// あなたに興味があるユーザー（閲覧2回以上 または 滞在5秒以上）
+async function interested(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const rows = await env.DB.prepare(
+    `SELECT p.user_id,p.display_name,p.gender,p.age,p.area,p.tagline,p.photo_key,p.verified,p.last_active,
+            f.last_at,f.cnt,f.dwell_ms
+     FROM footprints f JOIN profiles p ON p.user_id=f.viewer_id
+     WHERE f.owner_id=? AND (f.cnt>=? OR f.dwell_ms>=?)
+       AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=f.viewer_id) OR (b.blocker_id=f.viewer_id AND b.blocked_id=?))
+       AND NOT EXISTS (SELECT 1 FROM users us WHERE us.id=f.viewer_id AND us.banned=1)
+     ORDER BY (f.cnt>=? AND f.dwell_ms>=?) DESC, f.dwell_ms DESC, f.cnt DESC, f.last_at DESC
+     LIMIT 100`)
+    .bind(uid, INTEREST_VISITS, INTEREST_DWELL_MS, uid, uid, INTEREST_VISITS, INTEREST_DWELL_MS).all();
+  return json({ items: rows.results, visits: INTEREST_VISITS, dwellMs: INTEREST_DWELL_MS });
 }
 
 async function profileUpdate(request, env) {
