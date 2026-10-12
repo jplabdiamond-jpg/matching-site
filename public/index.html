@@ -105,6 +105,9 @@
   .tabs button{flex:1;background:transparent;color:var(--muted);padding:12px;border-radius:0;font-size:14px;font-weight:500;border-bottom:2px solid transparent}
   .tabs button.active{color:var(--anchor);border-bottom-color:var(--anchor)}
   .tabs .tbadge{min-width:16px;height:16px;padding:0 4px;font-size:10px;background:var(--notify);color:#fff;border-radius:999px;display:inline-grid;place-items:center;margin-left:4px;vertical-align:middle}
+  .locked-card{border:1px dashed var(--line);border-radius:12px;padding:16px;background:var(--soft);text-align:center}
+  .lav-blur{display:grid;place-items:center;background:linear-gradient(135deg,#C9BCC2,#9b8a93);color:#fff;font-size:22px}
+  .lcard.blur .lbody .name b{letter-spacing:2px}
   .convlist{flex:1;overflow:auto;padding:6px 0}
   .crow{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer}
   .crow:hover{background:#F7EFED}
@@ -524,9 +527,13 @@ function buildQS(){
   if(searchF.verified)qs.set('verified','1');
   if(searchF.online)qs.set('online','1');
   if(tagFilter)qs.set('tag',tagFilter);
+  ['purpose','marital','children','income','education','body_type','drinking','smoking','holiday'].forEach(k=>{ if(searchF[k])qs.set(k,searchF[k]); });
+  if(searchF.job)qs.set('job',searchF.job);
+  if(searchF.hmin)qs.set('hmin',searchF.hmin);
   return qs;
 }
-let searchF={area:'',min:'',max:'',q:'',sort:'active',verified:false,online:false,_tag:''};
+let searchF={area:'',min:'',max:'',q:'',sort:'active',verified:false,online:false,_tag:'',
+  purpose:'',marital:'',children:'',job:'',income:'',education:'',hmin:'',body_type:'',drinking:'',smoking:'',holiday:''};
 async function loadProfiles(reset=true){
   if(expState.loading)return;
   if(reset){ expState={offset:0,loading:false,done:false}; document.getElementById('grid').innerHTML=''; }
@@ -565,19 +572,15 @@ function openSearch(){
 }
 function renderSearch(){
   searchF._tag = tagFilter || '';
+  const adv = !!(me && me.limits && me.limits.advSearch);
   const areaOpts=['<option value="">エリアすべて</option>'].concat(AREAS.map(a=>`<option${searchF.area===a?' selected':''}>${a}</option>`)).join('');
   const ageSeg=[['','指定なし'],['20,29','20代'],['30,39','30代'],['40,49','40代'],['50,120','50代以上']];
   const curAge=searchF.min?`${searchF.min},${searchF.max}`:'';
-  document.getElementById('searchBody').innerHTML=`
+  const dsel=(id,key)=>`<select id="${id}"><option value="">指定なし</option>${OPT[key].map(o=>`<option${searchF[key]===o?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  const advHTML = adv ? `
     <div class="srch-input">
       <input id="sQ" placeholder="キーワード（名前・自己紹介）" value="${esc(searchF.q)}">
       <button class="solid" onclick="applySearch()" aria-label="さがす" style="padding:11px 15px">${svg('search')}</button>
-    </div>
-    <div class="fblock"><div class="fl">エリア</div>
-      <select id="sArea" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px;background:#fff">${areaOpts}</select>
-    </div>
-    <div class="fblock"><div class="fl">年齢</div>
-      <div class="seg" id="sAgeSeg">${ageSeg.map(([v,l])=>`<button class="${curAge===v?'on':''}" data-age="${v}" onclick="pickAge('${v}',this)">${l}</button>`).join('')}</div>
     </div>
     <div class="fblock"><div class="fl">こだわり条件</div>
       <div class="seg">
@@ -589,20 +592,68 @@ function renderSearch(){
         <button class="${searchF.sort==='new'?'on':''}" onclick="searchF.sort='new';renderSearch()">新着順</button>
       </div>
     </div>
+    <div class="fblock"><div class="fl">詳細条件</div>
+      <div class="row2">
+        <div class="field"><label>探している関係</label>${dsel('sPurpose','purpose')}</div>
+        <div class="field"><label>婚姻状況</label>${dsel('sMarital','marital')}</div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>子ども</label>${dsel('sChildren','children')}</div>
+        <div class="field"><label>お仕事</label><input id="sJob" placeholder="例）会社員" value="${esc(searchF.job)}"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>年収</label>${dsel('sIncome','income')}</div>
+        <div class="field"><label>最終学歴</label>${dsel('sEducation','education')}</div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>身長（cm以上）</label><input id="sHmin" type="number" min="130" max="230" placeholder="160" value="${esc(searchF.hmin)}"></div>
+        <div class="field"><label>体型</label>${dsel('sBody','body_type')}</div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>お酒</label>${dsel('sDrink','drinking')}</div>
+        <div class="field"><label>タバコ</label>${dsel('sSmoke','smoking')}</div>
+      </div>
+      <div class="field"><label>休日</label>${dsel('sHoliday','holiday')}</div>
+    </div>
     <div class="fblock"><div class="fl">やりたいこと・興味でさがす</div>
       <div class="tgrid">${PRESET_TAGS.map(t=>`<button class="${searchF._tag===t?'on':''}" onclick="pickSearchTag('${t}',this)">${esc(t)}</button>`).join('')}</div>
+    </div>` : `
+    <div class="fblock"><div class="locked-card">
+      <div style="font-weight:600;color:var(--anchor);margin-bottom:4px">🔒 詳細条件で探す</div>
+      <p class="note" style="margin:0 0 12px">キーワード・年収・趣味などの詳細検索や並べ替えは、スタンダードプラン以上でご利用いただけます。</p>
+      <button class="solid full" onclick="openUpgrade()">プランを見る</button>
+    </div></div>`;
+  document.getElementById('searchBody').innerHTML=`
+    <div class="fblock"><div class="fl">エリア</div>
+      <select id="sArea" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px;background:#fff">${areaOpts}</select>
     </div>
+    <div class="fblock"><div class="fl">年齢</div>
+      <div class="seg" id="sAgeSeg">${ageSeg.map(([v,l])=>`<button class="${curAge===v?'on':''}" data-age="${v}" onclick="pickAge('${v}',this)">${l}</button>`).join('')}</div>
+    </div>
+    ${advHTML}
     <button class="solid full" style="margin-top:4px" onclick="applySearch()">この条件でさがす</button>`;
 }
 function pickAge(v,el){ document.querySelectorAll('#sAgeSeg button').forEach(b=>b.classList.remove('on')); el.classList.add('on'); el.dataset._p=v; searchF._age=v; }
 function pickSearchTag(t,el){ const was=searchF._tag===t; document.querySelectorAll('#searchBody .tgrid button').forEach(b=>b.classList.remove('on')); if(was){ searchF._tag=''; } else { searchF._tag=t; el.classList.add('on'); } }
 function applySearch(){
-  searchF.q=(document.getElementById('sQ')?.value||'').trim();
+  const adv = !!(me && me.limits && me.limits.advSearch);
   searchF.area=document.getElementById('sArea')?.value||'';
   const ageSel=document.querySelector('#sAgeSeg button.on');
   const av=ageSel?ageSel.dataset.age:'';
   [searchF.min,searchF.max]=av?av.split(','):['',''];
-  tagFilter=searchF._tag||null; renderTagBar();
+  if(adv){
+    const gv=id=>document.getElementById(id)?.value||'';
+    searchF.q=gv('sQ').trim(); searchF.job=gv('sJob').trim(); searchF.hmin=gv('sHmin').trim();
+    searchF.purpose=gv('sPurpose'); searchF.marital=gv('sMarital'); searchF.children=gv('sChildren');
+    searchF.income=gv('sIncome'); searchF.education=gv('sEducation'); searchF.body_type=gv('sBody');
+    searchF.drinking=gv('sDrink'); searchF.smoking=gv('sSmoke'); searchF.holiday=gv('sHoliday');
+    tagFilter=searchF._tag||null;
+  } else {
+    // フリー: エリア・年齢以外はクリア（並べ替えもアクティブ順固定）
+    Object.assign(searchF,{q:'',job:'',hmin:'',purpose:'',marital:'',children:'',income:'',education:'',body_type:'',drinking:'',smoking:'',holiday:'',verified:false,online:false,sort:'active'});
+    tagFilter=null;
+  }
+  renderTagBar();
   goHome(); loadProfiles(true); window.scrollTo(0,0);
 }
 
@@ -709,7 +760,7 @@ async function blockFromProfile(id){
 async function sendLike(to){
   if(!me){openAuth('signup');return;}
   try{const r=await jpost('/like',{to_id:to});closeProfile();toast(r.matched?'マッチしました！トークから話しかけられます':'いいねを送りました');pollUnread();}
-  catch(e){toast(e.message);}
+  catch(e){ if(e.status===402){ toast(e.message); openUpgrade(); } else toast(e.message); }
 }
 
 /* ---- 相手から（いいね / 足あと）---- */
@@ -727,7 +778,15 @@ async function renderLikesList(){
   const box=document.getElementById('likesBody'); box.innerHTML='<p class="empty">読み込み中…</p>';
   try{
     const {items}=await api('/likes/received');
-    box.innerHTML=items.length?items.map(it=>`
+    box.innerHTML=items.length?items.map(it=> it.blurred ? `
+      <div class="lcard blur">
+        <div class="lav lav-blur">♡</div>
+        <div class="lbody">
+          <div class="name"><b>？？？</b></div>
+          <div class="meta">${esc(it.area||'')}</div>
+          <div class="tag">新しい「いいね」が届いています</div>
+          <button class="solid" onclick="openUpgrade()">アップグレードして表示</button>
+        </div></div>` : `
       <div class="lcard">
         <div class="lav" style="background:${grad(it.display_name)}" onclick="openProfileById('${it.user_id}')">${isOnline(it.last_active)?'<div class="odot"></div>':''}${avatarHTML(it)}</div>
         <div class="lbody">
@@ -774,7 +833,7 @@ async function renderInterestList(){
 }
 async function likeBack(to){
   try{const r=await jpost('/like',{to_id:to});toast(r.matched?'マッチしました！トークから話しかけられます':'いいねを返しました');await pollUnread();renderLikesList();}
-  catch(e){toast(e.message);}
+  catch(e){ if(e.status===402){ toast(e.message); openUpgrade(); } else toast(e.message); }
 }
 
 /* ---- ページ遷移（ハッシュルーター）---- */
@@ -1008,7 +1067,7 @@ function renderGallery(name, mine, status, view){
   document.getElementById('galleryModal').innerHTML=`
     <h2 class="mincho">ギャラリー</h2>
     <p class="note" style="margin:4px 0 12px">マッチした相手だけに公開できる、特別なギャラリーです。</p>
-    <div style="font-size:13px;font-weight:600;margin:8px 0 6px">あなたのギャラリー（最大12枚）</div>
+    <div style="font-size:13px;font-weight:600;margin:8px 0 6px">あなたのギャラリー（最大${(me&&me.limits?me.limits.gallery:1)}枚）</div>
     ${grid(mine.items,true)}
     <button class="ghost full" style="border:1px solid var(--line);margin-top:8px" onclick="document.getElementById('galleryInput').click()">写真を追加</button>
     <button class="${status.shared?'ghost':'solid'} full" style="margin-top:8px${status.shared?';border:1px solid var(--line)':''}" onclick="toggleGalleryShare(${status.shared?0:1})">${status.shared?'この相手に非公開にする':'この相手に公開する'}</button>
@@ -1045,24 +1104,26 @@ async function deleteSelected(){
 }
 function openUpgrade(){
   document.getElementById('pModal').innerHTML=`<h2 class="mincho">プラン・料金</h2>
-    <p class="note" style="margin:6px 0 14px">マッチした相手へのメッセージ送信は、スタンダードプラン以上でご利用いただけます。</p>
+    <p class="note" style="margin:6px 0 14px">プランごとに、いいね数・メッセージ・検索・ギャラリーなどの上限が変わります。</p>
     <div class="plan-card">
       <h3>スタンダード</h3><div class="price">¥3,980 <small>/ 月</small></div>
-      <ul><li>マッチした相手へメッセージ送り放題</li><li>「いいね」を送れる数が増加</li><li>本人確認済みバッジ対応</li></ul>
+      <ul><li>いいね 月30回</li><li>メッセージ送り放題</li><li>足あと10人まで表示</li><li>ギャラリー公開枠 5枚</li><li>詳細条件での検索・並べ替え</li></ul>
       <button class="solid full" onclick="startCheckout('standard')">スタンダードにする</button>
     </div>
     <div class="plan-card hi">
       <h3>プレミアム <span class="planpill">おすすめ</span></h3><div class="price">¥6,980 <small>/ 月</small></div>
-      <ul><li>スタンダードの全機能</li><li>検索結果で上位に表示</li><li>相手のオンライン状況・足あとを優先表示</li><li>ギャラリー公開枠の拡大</li></ul>
+      <ul><li>いいね 無制限</li><li>スタンダードの全機能</li><li>検索結果で常に上位表示</li><li>ギャラリー公開枠 10枚</li><li>足あと・相手からのいいね 制限なし</li></ul>
       <button class="solid full" onclick="startCheckout('premium')">プレミアムにする</button>
     </div>
     <div style="font-size:13px;font-weight:600;color:var(--anchor);margin:16px 0 6px">機能比較</div>
     <table class="cmp"><tr><th>機能</th><th>無料</th><th>標準</th><th>プレ</th></tr>
-      <tr><td>プロフィール閲覧</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-      <tr><td>いいねを送る</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-      <tr><td>メッセージ送信</td><td class="no">−</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>いいね数（月）</td><td>10</td><td>30</td><td class="yes">無制限</td></tr>
+      <tr><td>メッセージ</td><td>1人3通</td><td class="yes">送り放題</td><td class="yes">送り放題</td></tr>
+      <tr><td>相手からのいいね</td><td>最新1人</td><td class="yes">全員</td><td class="yes">全員</td></tr>
+      <tr><td>足あと表示</td><td>3人</td><td>10人</td><td class="yes">制限なし</td></tr>
+      <tr><td>ギャラリー枠</td><td>1枚</td><td>5枚</td><td class="yes">10枚</td></tr>
+      <tr><td>詳細検索・並替</td><td class="no">−</td><td class="yes">✓</td><td class="yes">✓</td></tr>
       <tr><td>上位表示</td><td class="no">−</td><td class="no">−</td><td class="yes">✓</td></tr>
-      <tr><td>足あと優先</td><td class="no">−</td><td class="no">−</td><td class="yes">✓</td></tr>
     </table>
     <div class="note">決済はStripeの安全な画面で行われます。</div>
     <button class="ghost full" style="margin-top:10px;border:1px solid var(--line)" onclick="document.getElementById('pScrim').classList.remove('on')">閉じる</button>`;

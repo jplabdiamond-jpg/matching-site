@@ -3,11 +3,24 @@
 // auth / explorer / likes+matches / messaging / R2 photos / verification / Stripe
 // ============================================================
 
+const INF = Infinity;
 const PLANS = {
-  free:     { messaging: false },
-  standard: { messaging: true  },
-  premium:  { messaging: true  },
+  free:     { likesPerMonth: 10,  msgPerMatch: 3,   gallery: 1,  footprints: 3,    advSearch: false, sortable: false, likesReveal: 1,   boost: false },
+  standard: { likesPerMonth: 30,  msgPerMatch: INF, gallery: 5,  footprints: 10,   advSearch: true,  sortable: true,  likesReveal: INF, boost: false },
+  premium:  { likesPerMonth: INF, msgPerMatch: INF, gallery: 10, footprints: 1000, advSearch: true,  sortable: true,  likesReveal: INF, boost: true  },
 };
+function planLimits(plan) { return PLANS[plan] || PLANS.free; }
+// Infinity を JSON 用に -1（無制限）へ
+function limitsForClient(plan) {
+  const l = planLimits(plan), out = {};
+  for (const k in l) out[k] = (l[k] === INF ? -1 : l[k]);
+  return out;
+}
+// 今月（JST）の開始エポックms
+function monthStartMs() {
+  const j = new Date(Date.now() + 9 * 3600000);
+  return Date.UTC(j.getUTCFullYear(), j.getUTCMonth(), 1) - 9 * 3600000;
+}
 // 「あなたに興味があるユーザー」判定: 閲覧2回以上 または 滞在5秒以上
 const INTEREST_VISITS = 2, INTEREST_DWELL_MS = 5000;
 
@@ -146,6 +159,9 @@ async function me(request, env) {
     u.tags = tg.results.map(r => r.tag);
     const vr = await env.DB.prepare('SELECT status FROM verifications WHERE user_id=?').bind(uid).first();
     u.verification_status = u.verified ? 'approved' : (vr ? vr.status : 'none');
+    u.limits = limitsForClient(u.plan);
+    const lc = await env.DB.prepare('SELECT COUNT(*) AS c FROM likes WHERE from_id=? AND created_at>=?').bind(uid, monthStartMs()).first();
+    u.likes_used = lc.c || 0;
   }
   return json(u);
 }
@@ -225,18 +241,33 @@ async function onboard(request, env) {
 async function listProfiles(request, env, url) {
   const uid = await auth(request, env);
   const q = url.searchParams, where = ['1=1'], bind = [];
-  if (q.get('area'))   { where.push('area=?');   bind.push(q.get('area')); }
-  if (q.get('min'))    { where.push('age>=?');   bind.push(Number(q.get('min'))); }
-  if (q.get('max'))    { where.push('age<=?');   bind.push(Number(q.get('max'))); }
-  if (q.get('q'))      { const kw = '%' + q.get('q').slice(0, 50) + '%'; where.push('(display_name LIKE ? OR tagline LIKE ? OR bio LIKE ?)'); bind.push(kw, kw, kw); }
-  if (q.get('verified') === '1') { where.push('verified=1'); }
-  if (q.get('online') === '1')   { where.push('last_active>?'); bind.push(Date.now() - 5 * 60000); }
-  if (q.get('tag'))    { where.push('EXISTS (SELECT 1 FROM profile_tags t WHERE t.user_id=profiles.user_id AND t.tag=?)'); bind.push(q.get('tag')); }
+  let plan = 'free', meGender = null;
+  if (uid) {
+    const meRow = await env.DB.prepare('SELECT p.gender, u.plan FROM profiles p JOIN users u ON u.id=p.user_id WHERE p.user_id=?').bind(uid).first();
+    meGender = meRow?.gender || null;
+    plan = meRow?.plan || 'free';
+  }
+  const lim = planLimits(plan), adv = lim.advSearch;
+  // 基本条件（全プラン）: エリア・年齢
+  if (q.get('area')) { where.push('area=?'); bind.push(q.get('area')); }
+  if (q.get('min'))  { where.push('age>=?'); bind.push(Number(q.get('min'))); }
+  if (q.get('max'))  { where.push('age<=?'); bind.push(Number(q.get('max'))); }
+  // 詳細条件（スタンダード以上のみ有効）
+  if (adv) {
+    if (q.get('q')) { const kw = '%' + q.get('q').slice(0, 50) + '%'; where.push('(display_name LIKE ? OR tagline LIKE ? OR bio LIKE ?)'); bind.push(kw, kw, kw); }
+    if (q.get('verified') === '1') where.push('verified=1');
+    if (q.get('online') === '1') { where.push('last_active>?'); bind.push(Date.now() - 5 * 60000); }
+    if (q.get('tag')) { where.push('EXISTS (SELECT 1 FROM profile_tags t WHERE t.user_id=profiles.user_id AND t.tag=?)'); bind.push(q.get('tag')); }
+    for (const f of ['purpose', 'marital', 'children', 'income', 'education', 'body_type', 'drinking', 'smoking', 'holiday']) {
+      if (q.get(f)) { where.push(`${f}=?`); bind.push(q.get(f)); }
+    }
+    if (q.get('job'))  { where.push('job LIKE ?'); bind.push('%' + q.get('job').slice(0, 30) + '%'); }
+    if (q.get('hmin')) { where.push('height>=?'); bind.push(Number(q.get('hmin'))); }
+  }
   where.push('NOT EXISTS (SELECT 1 FROM users us WHERE us.id=profiles.user_id AND us.banned=1)');
   if (uid) {
-    const meRow = await env.DB.prepare('SELECT gender FROM profiles WHERE user_id=?').bind(uid).first();
-    if (meRow?.gender === 'male') { where.push('gender=?'); bind.push('female'); }
-    else if (meRow?.gender === 'female') { where.push('gender=?'); bind.push('male'); }
+    if (meGender === 'male') { where.push('gender=?'); bind.push('female'); }
+    else if (meGender === 'female') { where.push('gender=?'); bind.push('male'); }
     else if (q.get('gender')) { where.push('gender=?'); bind.push(q.get('gender')); }
     where.push('user_id!=?'); bind.push(uid);
     where.push('NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=profiles.user_id) OR (b.blocker_id=profiles.user_id AND b.blocked_id=?))');
@@ -248,7 +279,10 @@ async function listProfiles(request, env, url) {
     where.push('private_mode=0');
   }
   const limit = Math.min(Number(q.get('limit') || 24), 48), offset = Number(q.get('offset') || 0);
-  const order = q.get('sort') === 'new' ? 'created_at DESC' : 'last_active DESC';
+  // 並べ替えはスタンダード以上のみ（フリーは常にアクティブ順）
+  const base = (lim.sortable && q.get('sort') === 'new') ? 'created_at DESC' : 'last_active DESC';
+  // プレミアム会員を常に上位表示
+  const order = `(SELECT plan FROM users pu WHERE pu.id=profiles.user_id)='premium' DESC, ${base}`;
   const rows = await env.DB.prepare(
     `SELECT user_id,display_name,gender,age,area,tagline,photo_key,verified,last_active
      FROM profiles WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ? OFFSET ?`)
@@ -265,6 +299,15 @@ async function like(request, env, ctx) {
   if (!to_id || to_id === uid) return json({ error: 'invalid target' }, 400);
   const now = Date.now();
   const existed = await env.DB.prepare('SELECT 1 FROM likes WHERE from_id=? AND to_id=?').bind(uid, to_id).first();
+  if (!existed) {
+    const u = await env.DB.prepare('SELECT plan FROM users WHERE id=?').bind(uid).first();
+    const limit = planLimits(u?.plan).likesPerMonth;
+    if (limit !== INF) {
+      const used = await env.DB.prepare('SELECT COUNT(*) AS c FROM likes WHERE from_id=? AND created_at>=?').bind(uid, monthStartMs()).first();
+      if ((used.c || 0) >= limit)
+        return json({ error: `今月の「いいね」上限（${limit}回）に達しました。プランをアップグレードすると増やせます`, upgrade: true, limit }, 402);
+    }
+  }
   await env.DB.prepare('INSERT OR IGNORE INTO likes (from_id,to_id,created_at) VALUES (?,?,?)')
     .bind(uid, to_id, now).run();
   if (!existed) notifyUser(env, ctx, to_id);
@@ -299,7 +342,14 @@ async function likesReceived(request, env) {
        AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=l.from_id) OR (b.blocker_id=l.from_id AND b.blocked_id=?))
        AND NOT EXISTS (SELECT 1 FROM users us WHERE us.id=l.from_id AND us.banned=1)
      ORDER BY l.created_at DESC LIMIT 100`).bind(uid, uid, uid, uid).all();
-  return json({ items: rows.results });
+  const u = await env.DB.prepare('SELECT plan FROM users WHERE id=?').bind(uid).first();
+  const reveal = planLimits(u?.plan).likesReveal;
+  let items = rows.results;
+  if (reveal !== INF) {
+    items = items.map((it, i) => i < reveal ? it
+      : { blurred: true, age: it.age, area: it.area, created_at: it.created_at });
+  }
+  return json({ items, reveal: reveal === INF ? -1 : reveal, total: rows.results.length });
 }
 
 async function conversations(request, env) {
@@ -379,14 +429,16 @@ async function profileOne(request, env, url) {
 async function footprints(request, env) {
   const uid = await auth(request, env);
   if (!uid) return json({ error: 'unauthorized' }, 401);
+  const u = await env.DB.prepare('SELECT plan FROM users WHERE id=?').bind(uid).first();
+  const cap = planLimits(u?.plan).footprints; // free:3 / standard:10 / premium:1000
   const rows = await env.DB.prepare(
     `SELECT p.user_id,p.display_name,p.gender,p.age,p.area,p.photo_key,p.verified,p.last_active,f.last_at
      FROM footprints f JOIN profiles p ON p.user_id=f.viewer_id
      WHERE f.owner_id=?
        AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=f.viewer_id) OR (b.blocker_id=f.viewer_id AND b.blocked_id=?))
-     ORDER BY f.last_at DESC LIMIT 100`).bind(uid, uid, uid).all();
+     ORDER BY f.last_at DESC LIMIT ?`).bind(uid, uid, uid, cap).all();
   await env.DB.prepare('UPDATE profiles SET footprints_seen_at=? WHERE user_id=?').bind(Date.now(), uid).run();
-  return json({ items: rows.results });
+  return json({ items: rows.results, cap });
 }
 
 // プロフィール滞在時間を記録（最長値を保持）
@@ -562,8 +614,10 @@ async function galleryUpload(request, env) {
   if (!EXT[ct]) return json({ error: 'JPEG / PNG / WebP のみ対応しています' }, 400);
   const buf = await request.arrayBuffer();
   if (buf.byteLength > 5 * 1024 * 1024) return json({ error: '5MBまでにしてください' }, 400);
+  const gu = await env.DB.prepare('SELECT plan FROM users WHERE id=?').bind(uid).first();
+  const gcap = planLimits(gu?.plan).gallery;
   const cnt = await env.DB.prepare('SELECT COUNT(*) AS c FROM gallery_photos WHERE user_id=?').bind(uid).first();
-  if ((cnt.c || 0) >= 12) return json({ error: 'ギャラリーは12枚までです' }, 400);
+  if ((cnt.c || 0) >= gcap) return json({ error: `ギャラリー公開枠は${gcap}枚までです（プランで上限が変わります）`, upgrade: true }, 400);
   const key = `gallery/${uid}/${Date.now()}.${EXT[ct]}`;
   await env.PHOTOS.put(key, buf, { httpMetadata: { contentType: ct } });
   await env.DB.prepare('INSERT INTO gallery_photos (id,user_id,key,created_at) VALUES (?,?,?,?)').bind(uuid(), uid, key, Date.now()).run();
@@ -847,15 +901,19 @@ async function sendMessage(request, env, ctx) {
   const uid = await auth(request, env);
   if (!uid) return json({ error: 'unauthorized' }, 401);
   if (await isBanned(env, uid)) return json({ error: 'アカウントが停止されています' }, 403);
-  const u = await env.DB.prepare('SELECT plan FROM users WHERE id=?').bind(uid).first();
-  if (!PLANS[u.plan]?.messaging)
-    return json({ error: 'メッセージの送信はスタンダードプラン以上でご利用いただけます', upgrade: true }, 402);
   const { match_id, body } = await request.json();
   const text = (body || '').trim();
   if (!text) return json({ error: '本文が空です' }, 400);
   if (text.length > 2000) return json({ error: '長すぎます' }, 400);
   const row = match_id ? await matchMember(env, match_id, uid) : null;
   if (!row) return json({ error: 'not found' }, 404);
+  const u = await env.DB.prepare('SELECT plan FROM users WHERE id=?').bind(uid).first();
+  const cap = planLimits(u?.plan).msgPerMatch;
+  if (cap !== INF) {
+    const sent = await env.DB.prepare('SELECT COUNT(*) AS c FROM messages WHERE match_id=? AND from_id=?').bind(match_id, uid).first();
+    if ((sent.c || 0) >= cap)
+      return json({ error: `フリープランは1人につき${cap}通までです。続けるにはプランをアップグレードしてください`, upgrade: true, limit: cap }, 402);
+  }
   const id = uuid(), now = Date.now();
   await env.DB.prepare('INSERT INTO messages (id,match_id,from_id,body,created_at) VALUES (?,?,?,?,?)')
     .bind(id, match_id, uid, text, now).run();
