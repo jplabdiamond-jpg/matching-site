@@ -128,6 +128,11 @@
   .deck-actions-lbl span{width:54px;text-align:center}
   .like-msg{margin:4px 0 2px;background:#F7EFED;border-radius:10px;padding:8px 11px;color:#5c4650;font-size:13.5px;line-height:1.5;display:flex;gap:6px;align-items:flex-start}
   .like-msg .ic-svg{flex:none;margin-top:2px;color:var(--anchor)}
+  .up-reason{display:flex;gap:12px;align-items:flex-start;background:linear-gradient(135deg,#F3E8EC,#F7EFED);border:1px solid #E6D3DA;border-radius:14px;padding:14px 16px;margin:4px 0 14px}
+  .up-reason-ic{flex:none;width:38px;height:38px;border-radius:50%;background:var(--anchor);color:#fff;display:grid;place-items:center}
+  .up-reason-ic .ic-svg{width:20px;height:20px}
+  .up-reason-ttl{font-weight:700;color:var(--anchor);font-size:14.5px;line-height:1.45}
+  .up-reason-sub{color:#6a5d64;font-size:12.5px;margin-top:4px;line-height:1.5}
   /* 探す 上部カテゴリーカード */
   .cat-cards{display:flex;gap:12px;margin:0 0 18px}
   .cat-card{flex:1;border-radius:16px;padding:22px 14px;text-align:center;cursor:pointer;color:#fff;box-shadow:0 8px 22px rgba(44,36,48,.14)}
@@ -436,6 +441,7 @@ const ICONS={
   heart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8L12 21.2l8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/>',
   skip:'<path d="M5 5v14M9 12l9-7v14z"/>',
   close:'<path d="M6 6l12 12M18 6 6 18"/>',
+  lock:'<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>',
   ring:'<circle cx="12" cy="14.5" r="5.3"/><path d="M8.6 9 10 4.2h4L15.4 9"/>',
   child:'<circle cx="12" cy="8" r="3.8"/><path d="M6.2 21c0-3.2 2.6-5.8 5.8-5.8s5.8 2.6 5.8 5.8"/>',
   briefcase:'<rect x="2.6" y="7.6" width="18.8" height="12.8" rx="2"/><path d="M8.5 7.6V6a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v1.6"/><path d="M2.6 13h18.8"/>',
@@ -692,12 +698,12 @@ async function deckReject(){
 async function deckLike(){
   const it=deckCurrent(); if(!it)return;
   try{ const r=await jpost('/like',{to_id:it.user_id}); toast(r.matched?'マッチしました！トークから話しかけられます':'いいねを送りました'); pollUnread(); }
-  catch(e){ if(e.status===402){ toast(e.message); openUpgrade(); return; } toast(e.message); }
+  catch(e){ if(e.status===402){ openUpgrade(e.message); return; } toast(e.message); }
   deckAdvance();
 }
 function deckMsgLike(){
   const it=deckCurrent(); if(!it)return;
-  if(!(me&&me.limits&&me.limits.paid)){ toast('メッセージ付きいいねはスタンダードプラン以上でご利用いただけます'); openUpgrade(); return; }
+  if(!(me&&me.limits&&me.limits.paid)){ openUpgrade('メッセージ付きいいねはスタンダードプラン以上の機能です'); return; }
   document.getElementById('msgModal').innerHTML=`
     <h2>メッセージ付きいいね</h2>
     <p class="note" style="margin:2px 0 14px">${esc(it.display_name)}さんへ、ひとことメッセージを添えて「いいね」を送れます。（最大200文字）</p>
@@ -717,13 +723,13 @@ async function deckMsgSend(to){
     document.getElementById('msgScrim').classList.remove('on');
     toast(r.matched?'マッチしました！トークから話しかけられます':'メッセージ付きいいねを送りました');
     pollUnread(); deckAdvance();
-  }catch(e){ if(e.status===402){ toast(e.message); openUpgrade(); } else toast(e.message); }
+  }catch(e){ if(e.status===402){ openUpgrade(e.message); } else toast(e.message); }
 }
 async function deckFav(){
   const it=deckCurrent(); if(!it)return;
-  if(!(me&&me.limits&&me.limits.paid)){ toast('お気に入り機能はスタンダードプラン以上でご利用いただけます'); openUpgrade(); return; }
+  if(!(me&&me.limits&&me.limits.paid)){ openUpgrade('お気に入り機能はスタンダードプラン以上の機能です'); return; }
   try{ const r=await jpost('/favorite',{target_id:it.user_id}); toast(r.favorited?'お気に入りに追加しました':'お気に入りから外しました'); }
-  catch(e){ if(e.status===402){ toast(e.message); openUpgrade(); return; } toast(e.message); }
+  catch(e){ if(e.status===402){ openUpgrade(e.message); return; } toast(e.message); }
   deckAdvance();
 }
 function reloadDeck(){ deckSeen=new Set(); deckItems=[]; deckIdx=0; loadDeck(true); }
@@ -733,7 +739,8 @@ let browseMode='popular', browseState={offset:0,loading:false,done:false,sort:''
 function openBrowse(mode){
   // 人気・最近・お気に入りはスタンダード以上
   if((mode==='popular'||mode==='new'||mode==='favorites') && !(me&&me.limits&&me.limits.paid)){
-    toast('この機能はスタンダードプラン以上でご利用いただけます'); openUpgrade(); return;
+    const why={popular:'人気会員の一覧は',new:'最近始めた会員の一覧は',favorites:'お気に入り機能は'}[mode]||'この機能は';
+    openUpgrade(why+'スタンダードプラン以上の機能です'); return;
   }
   location.hash='#browse='+mode;
 }
@@ -844,7 +851,7 @@ function renderSearch(){
     <div class="fblock"><div class="locked-card">
       <div style="font-weight:600;color:var(--anchor);margin-bottom:4px">🔒 詳細条件で探す</div>
       <p class="note" style="margin:0 0 12px">キーワード・年収・趣味などの詳細検索や並べ替えは、スタンダードプラン以上でご利用いただけます。</p>
-      <button class="solid full" onclick="openUpgrade()">プランを見る</button>
+      <button class="solid full" onclick="openUpgrade('詳細条件での検索・並べ替えはスタンダードプラン以上の機能です')">プランを見る</button>
     </div></div>`;
   const paid=!!(me&&me.limits&&me.limits.paid);
   const catCards=`
@@ -1006,7 +1013,7 @@ async function blockFromProfile(id){
 async function sendLike(to){
   if(!me){openAuth('signup');return;}
   try{const r=await jpost('/like',{to_id:to});closeProfile();toast(r.matched?'マッチしました！トークから話しかけられます':'いいねを送りました');pollUnread();}
-  catch(e){ if(e.status===402){ toast(e.message); openUpgrade(); } else toast(e.message); }
+  catch(e){ if(e.status===402){ openUpgrade(e.message); } else toast(e.message); }
 }
 
 /* ---- 相手から（いいね / 足あと）---- */
@@ -1031,7 +1038,7 @@ async function renderLikesList(){
           <div class="name"><b>？？？</b></div>
           <div class="meta">${esc(it.area||'')}</div>
           <div class="tag">新しい「いいね」が届いています</div>
-          <button class="solid" onclick="openUpgrade()">アップグレードして表示</button>
+          <button class="solid" onclick="openUpgrade('相手からのいいねをすべて見るにはスタンダードプラン以上が必要です')">アップグレードして表示</button>
         </div></div>` : `
       <div class="lcard">
         <div class="lav" style="background:${grad(it.display_name)}" onclick="openProfileById('${it.user_id}')">${isOnline(it.last_active)?'<div class="odot"></div>':''}${avatarHTML(it)}</div>
@@ -1079,7 +1086,7 @@ async function renderInterestList(){
 }
 async function likeBack(to){
   try{const r=await jpost('/like',{to_id:to});toast(r.matched?'マッチしました！トークから話しかけられます':'いいねを返しました');await pollUnread();renderLikesList();}
-  catch(e){ if(e.status===402){ toast(e.message); openUpgrade(); } else toast(e.message); }
+  catch(e){ if(e.status===402){ openUpgrade(e.message); } else toast(e.message); }
 }
 
 /* ---- ページ遷移（ハッシュルーター）---- */
@@ -1162,7 +1169,7 @@ async function renderMyPagePage(){
     ${me.plan==='free'?`<div class="mp-card" style="background:linear-gradient(135deg,#fff,var(--soft2))">
       <div style="font-family:'Shippori Mincho',serif;color:var(--anchor);font-size:16px;margin-bottom:4px">メッセージを始めませんか？</div>
       <p class="note" style="margin:0 0 10px">スタンダードプラン以上で、マッチした相手へメッセージを送れます。</p>
-      <button class="solid full" style="margin:0" onclick="openUpgrade()">プランを見る</button>
+      <button class="solid full" style="margin:0" onclick="openUpgrade('詳細条件での検索・並べ替えはスタンダードプラン以上の機能です')">プランを見る</button>
     </div>`:''}
 
     ${(me.limits&&me.limits.paid)?`<button class="mp-link" onclick="openBrowse('favorites')"><span class="ic">${svg('star')}</span>お気に入り<span class="ar">›</span></button>`:''}
@@ -1247,7 +1254,7 @@ function showChat(matchId){
   const canSend=me&&(me.plan==='standard'||me.plan==='premium');
   document.getElementById('composerHolder').innerHTML=canSend?`
     <div class="composer"><input id="msgInput" placeholder="メッセージを入力" maxlength="2000"><button class="solid" id="sendBtn">送信</button></div>`:`
-    <div class="planbar" onclick="openUpgrade()">メッセージの送信はスタンダードプラン以上でご利用いただけます（タップして詳細）</div>`;
+    <div class="planbar" onclick="openUpgrade('メッセージの送信はスタンダードプラン以上の機能です')">メッセージの送信はスタンダードプラン以上でご利用いただけます（タップして詳細）</div>`;
   openPage('view-chat');
   if(canSend){
     document.getElementById('sendBtn').onclick=doSend;
@@ -1294,7 +1301,7 @@ async function doSend(){
     chatState.after=Math.max(chatState.after,m.created_at);
     appendBubble(m,true,true);
     const box=document.getElementById('msgs'); box.scrollTop=box.scrollHeight;
-  }catch(e){ if(e.status===402){openUpgrade();} else toast(e.message); }
+  }catch(e){ if(e.status===402){openUpgrade(e.message);} else toast(e.message); }
 }
 /* ---- トークの ⋯ メニュー ---- */
 function buildChatMenu(){
@@ -1362,8 +1369,21 @@ async function deleteSelected(){
   catch(e){ toast(e.message); }
   exitSelect();
 }
-function openUpgrade(){
-  document.getElementById('pModal').innerHTML=`<h2 class="mincho">プラン・料金</h2>
+function openUpgrade(reason, focus){
+  const premiumOnly = /プレミアム/.test(reason||'');
+  const sub = premiumOnly
+    ? 'プレミアムにすると、この機能を含めすべての上限が解放されます。'
+    : 'スタンダードにすると、この機能を含め出会いの幅がぐっと広がります。';
+  const banner = reason ? `
+    <div class="up-reason">
+      <div class="up-reason-ic">${svg('lock')}</div>
+      <div>
+        <div class="up-reason-ttl">${esc(reason)}</div>
+        <div class="up-reason-sub">${sub}</div>
+      </div>
+    </div>` : '';
+  document.getElementById('pModal').innerHTML=`<h2 class="mincho">プランを上げませんか？</h2>
+    ${banner}
     <p class="note" style="margin:6px 0 14px">プランごとに、いいね数・メッセージ・検索・ギャラリーなどの上限が変わります。</p>
     <div class="plan-card">
       <h3>スタンダード</h3><div class="price">¥3,980 <small>/ 月</small></div>
@@ -1504,7 +1524,7 @@ function renderMyEdit(pd,hint){
         <input type="checkbox" id="mySecret" ${me.secret_mode?'checked':''} ${me.plan==='premium'?'':'disabled'} style="width:auto" onchange="toggleSecret(this.checked)">
         シークレットモード <span class="chip" style="font-size:10px;padding:2px 8px;margin:0">${me.plan==='premium'?'PREMIUM':'プレミアム限定'}</span>
       </label>
-      <div class="note" style="margin-top:4px">ONにすると、相手に足あとを残さず、あなたのプロフィールが検索・一覧に表示されなくなります（いいねした相手には表示されます）。${me.plan==='premium'?'':'<br><span onclick="openUpgrade()" style="color:var(--anchor);cursor:pointer;text-decoration:underline">プレミアムにアップグレード</span>'}</div>
+      <div class="note" style="margin-top:4px">ONにすると、相手に足あとを残さず、あなたのプロフィールが検索・一覧に表示されなくなります（いいねした相手には表示されます）。${me.plan==='premium'?'':'<br><span onclick="openUpgrade(\'シークレットモードはプレミアムプランの機能です\')" style="color:var(--anchor);cursor:pointer;text-decoration:underline">プレミアムにアップグレード</span>'}</div>
     </div>
     <div class="err" id="myErr" style="margin-top:10px"></div>
     <button class="solid full" onclick="saveMyEdit()">保存する</button>
@@ -1554,7 +1574,7 @@ async function deletePhoto(k){ if(!confirm('この写真を削除しますか？
 async function togglePrivacy(on){ try{await jpost('/privacy',{private_mode:on?1:0});me.private_mode=on?1:0;await loadProfiles();toast(on?'身バレ防止をONにしました':'身バレ防止をOFFにしました');}catch(e){toast(e.message);} }
 async function toggleSecret(on){
   try{ await jpost('/secret',{on:on?1:0}); me.secret_mode=on?1:0; await loadProfiles(); toast(on?'シークレットモードをONにしました':'シークレットモードをOFFにしました'); }
-  catch(e){ const cb=document.getElementById('mySecret'); if(cb)cb.checked=!!me.secret_mode; if(e.status===402){ toast(e.message); openUpgrade(); } else toast(e.message); }
+  catch(e){ const cb=document.getElementById('mySecret'); if(cb)cb.checked=!!me.secret_mode; if(e.status===402){ openUpgrade(e.message); } else toast(e.message); }
 }
 async function switchPlan(plan){
   try{ await jpost('/dev/plan',{plan}); await loadMe(); deckItems=[]; deckIdx=0; renderMyPagePage(); toast('プランを'+({free:'フリー',standard:'スタンダード',premium:'プレミアム'}[plan]||plan)+'に切り替えました'); }
