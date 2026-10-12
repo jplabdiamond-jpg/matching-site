@@ -455,7 +455,7 @@ const ATTR_META=[
 const SLOT_DT=[['wd','平日'],['we','土日祝']];
 const SLOT_TM=[['morning','朝'],['day','昼'],['evening','夜'],['late','深夜']];
 
-let me=null, convMap={}, convTab='talk', likesTab='likes', chatState={matchId:null,after:0,timer:null}, unreadState={messages:0,likes:0,footprints:0}, unreadTimer=null, myTags=[], tagFilter=null;
+let me=null, convMap={}, convTab='talk', likesTab='likes', chatState={matchId:null,after:0,timer:null}, unreadState={messages:0,likes:0,footprints:0}, unreadTimer=null, myTags=[], tagFilters=[];
 
 async function api(path,opts={}){
   const r=await fetch('/api'+path,{credentials:'same-origin',...opts});
@@ -526,13 +526,13 @@ function buildQS(){
   qs.set('sort',searchF.sort||'active');
   if(searchF.verified)qs.set('verified','1');
   if(searchF.online)qs.set('online','1');
-  if(tagFilter)qs.set('tag',tagFilter);
+  tagFilters.forEach(t=>qs.append('tag',t));
   ['purpose','marital','children','income','education','body_type','drinking','smoking','holiday'].forEach(k=>{ if(searchF[k])qs.set(k,searchF[k]); });
   if(searchF.job)qs.set('job',searchF.job);
   if(searchF.hmin)qs.set('hmin',searchF.hmin);
   return qs;
 }
-let searchF={area:'',min:'',max:'',q:'',sort:'active',verified:false,online:false,_tag:'',
+let searchF={area:'',min:'',max:'',q:'',sort:'active',verified:false,online:false,_tags:[],
   purpose:'',marital:'',children:'',job:'',income:'',education:'',hmin:'',body_type:'',drinking:'',smoking:'',holiday:''};
 async function loadProfiles(reset=true){
   if(expState.loading)return;
@@ -541,7 +541,7 @@ async function loadProfiles(reset=true){
   expState.loading=true;
   const qs=buildQS();
   qs.set('limit','24'); qs.set('offset',expState.offset);
-  document.getElementById('homeSub').textContent=(searchF.sort==='new'?'新着順':'アクティブ順')+(tagFilter?'・'+tagFilter:'')+(searchF.area?'・'+searchF.area:'');
+  document.getElementById('homeSub').textContent=(searchF.sort==='new'?'新着順':'アクティブ順')+(tagFilters.length?'・'+tagFilters.join('・'):'')+(searchF.area?'・'+searchF.area:'');
   try{
     const {items}=await api('/profiles?'+qs.toString());
     const grid=document.getElementById('grid');
@@ -559,11 +559,12 @@ window.addEventListener('scroll',()=>{
 });
 function renderTagBar(){
   const b=document.getElementById('tagFilterBar');
-  if(!tagFilter){ b.style.display='none'; b.innerHTML=''; return; }
-  b.style.display=''; b.innerHTML=`<span class="chip common">${svg('tag')} ${esc(tagFilter)} <span onclick="clearTagFilter()" style="cursor:pointer">✕</span></span>`;
+  if(!tagFilters.length){ b.style.display='none'; b.innerHTML=''; return; }
+  b.style.display=''; b.innerHTML=tagFilters.map(t=>`<span class="chip common" style="margin:0 6px 6px 0">${svg('tag')} ${esc(t)} <span onclick="removeTagFilter('${esc(t)}')" style="cursor:pointer">✕</span></span>`).join('')+`<span class="chip" style="cursor:pointer;margin:0 0 6px 0" onclick="clearTagFilter()">すべて解除</span>`;
 }
-function setTagFilter(t){ tagFilter=t; renderTagBar(); loadProfiles(true); window.scrollTo(0,0); }
-function clearTagFilter(){ tagFilter=null; renderTagBar(); loadProfiles(true); }
+function setTagFilter(t){ tagFilters=[t]; renderTagBar(); loadProfiles(true); window.scrollTo(0,0); }
+function removeTagFilter(t){ tagFilters=tagFilters.filter(x=>x!==t); renderTagBar(); loadProfiles(true); }
+function clearTagFilter(){ tagFilters=[]; renderTagBar(); loadProfiles(true); }
 function filterByTag(t){ closeProfile(); closeModals(); goHome(); setTagFilter(t); }
 
 /* ---- さがす ---- */
@@ -571,7 +572,7 @@ function openSearch(){
   if(location.hash!=='#search') location.hash='#search';
 }
 function renderSearch(){
-  searchF._tag = tagFilter || '';
+  searchF._tags = tagFilters.slice();
   const adv = !!(me && me.limits && me.limits.advSearch);
   const areaOpts=['<option value="">エリアすべて</option>'].concat(AREAS.map(a=>`<option${searchF.area===a?' selected':''}>${a}</option>`)).join('');
   const ageSeg=[['','指定なし'],['20,29','20代'],['30,39','30代'],['40,49','40代'],['50,120','50代以上']];
@@ -615,8 +616,8 @@ function renderSearch(){
       </div>
       <div class="field"><label>休日</label>${dsel('sHoliday','holiday')}</div>
     </div>
-    <div class="fblock"><div class="fl">やりたいこと・興味でさがす</div>
-      <div class="tgrid">${PRESET_TAGS.map(t=>`<button class="${searchF._tag===t?'on':''}" onclick="pickSearchTag('${t}',this)">${esc(t)}</button>`).join('')}</div>
+    <div class="fblock"><div class="fl">やりたいこと・興味でさがす<span class="note" style="font-weight:400">（複数選択可）</span></div>
+      <div class="tgrid"><button id="sTagAll" class="${searchF._tags.length===PRESET_TAGS.length?'on':''}" onclick="toggleAllTags(this)">ALL</button>${PRESET_TAGS.map(t=>`<button class="${searchF._tags.includes(t)?'on':''}" data-tag="${esc(t)}" onclick="pickSearchTag('${t}',this)">${esc(t)}</button>`).join('')}</div>
     </div>` : `
     <div class="fblock"><div class="locked-card">
       <div style="font-weight:600;color:var(--anchor);margin-bottom:4px">🔒 詳細条件で探す</div>
@@ -634,7 +635,17 @@ function renderSearch(){
     <button class="solid full" style="margin-top:4px" onclick="applySearch()">この条件でさがす</button>`;
 }
 function pickAge(v,el){ document.querySelectorAll('#sAgeSeg button').forEach(b=>b.classList.remove('on')); el.classList.add('on'); el.dataset._p=v; searchF._age=v; }
-function pickSearchTag(t,el){ const was=searchF._tag===t; document.querySelectorAll('#searchBody .tgrid button').forEach(b=>b.classList.remove('on')); if(was){ searchF._tag=''; } else { searchF._tag=t; el.classList.add('on'); } }
+function pickSearchTag(t,el){
+  if(searchF._tags.includes(t)){ searchF._tags=searchF._tags.filter(x=>x!==t); el.classList.remove('on'); }
+  else { searchF._tags.push(t); el.classList.add('on'); }
+  const all=document.getElementById('sTagAll'); if(all) all.classList.toggle('on', searchF._tags.length===PRESET_TAGS.length);
+}
+function toggleAllTags(el){
+  const all=searchF._tags.length!==PRESET_TAGS.length;
+  searchF._tags = all ? PRESET_TAGS.slice() : [];
+  el.classList.toggle('on', all);
+  document.querySelectorAll('#searchBody .tgrid button[data-tag]').forEach(b=>b.classList.toggle('on', all));
+}
 function applySearch(){
   const adv = !!(me && me.limits && me.limits.advSearch);
   searchF.area=document.getElementById('sArea')?.value||'';
@@ -647,11 +658,11 @@ function applySearch(){
     searchF.purpose=gv('sPurpose'); searchF.marital=gv('sMarital'); searchF.children=gv('sChildren');
     searchF.income=gv('sIncome'); searchF.education=gv('sEducation'); searchF.body_type=gv('sBody');
     searchF.drinking=gv('sDrink'); searchF.smoking=gv('sSmoke'); searchF.holiday=gv('sHoliday');
-    tagFilter=searchF._tag||null;
+    tagFilters=searchF._tags.slice();
   } else {
     // フリー: エリア・年齢以外はクリア（並べ替えもアクティブ順固定）
-    Object.assign(searchF,{q:'',job:'',hmin:'',purpose:'',marital:'',children:'',income:'',education:'',body_type:'',drinking:'',smoking:'',holiday:'',verified:false,online:false,sort:'active'});
-    tagFilter=null;
+    Object.assign(searchF,{q:'',job:'',hmin:'',purpose:'',marital:'',children:'',income:'',education:'',body_type:'',drinking:'',smoking:'',holiday:'',verified:false,online:false,sort:'active',_tags:[]});
+    tagFilters=[];
   }
   renderTagBar();
   goHome(); loadProfiles(true); window.scrollTo(0,0);
@@ -1239,6 +1250,13 @@ function renderMyEdit(pd,hint){
       </label>
       <div class="note" style="margin-top:4px">ONにすると、あなたが「いいね」した相手にだけプロフィールが表示され、一覧・検索には出なくなります。</div>
     </div>
+    <div style="margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:10px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:${me.plan==='premium'?'pointer':'not-allowed'};font-size:14px;color:var(--ink)">
+        <input type="checkbox" id="mySecret" ${me.secret_mode?'checked':''} ${me.plan==='premium'?'':'disabled'} style="width:auto" onchange="toggleSecret(this.checked)">
+        シークレットモード <span class="chip" style="font-size:10px;padding:2px 8px;margin:0">${me.plan==='premium'?'PREMIUM':'プレミアム限定'}</span>
+      </label>
+      <div class="note" style="margin-top:4px">ONにすると、相手に足あとを残さず、あなたのプロフィールが検索・一覧に表示されなくなります（いいねした相手には表示されます）。${me.plan==='premium'?'':'<br><span onclick="openUpgrade()" style="color:var(--anchor);cursor:pointer;text-decoration:underline">プレミアムにアップグレード</span>'}</div>
+    </div>
     <div class="err" id="myErr" style="margin-top:10px"></div>
     <button class="solid full" onclick="saveMyEdit()">保存する</button>
     <button class="ghost full" style="margin-top:6px" onclick="document.getElementById('myScrim').classList.remove('on')">閉じる</button>`;
@@ -1285,6 +1303,10 @@ async function saveMyEdit(){
 async function setMainPhoto(k){ try{await jpost('/photos/main',{key:k});await loadMe();const pd=await api('/photos/mine');renderMyEdit(pd);await loadProfiles();toast('メイン写真を変更しました');}catch(e){toast(e.message);} }
 async function deletePhoto(k){ if(!confirm('この写真を削除しますか？'))return; try{await jpost('/photos/delete',{key:k});await loadMe();const pd=await api('/photos/mine');renderMyEdit(pd);await loadProfiles();toast('写真を削除しました');}catch(e){toast(e.message);} }
 async function togglePrivacy(on){ try{await jpost('/privacy',{private_mode:on?1:0});me.private_mode=on?1:0;await loadProfiles();toast(on?'身バレ防止をONにしました':'身バレ防止をOFFにしました');}catch(e){toast(e.message);} }
+async function toggleSecret(on){
+  try{ await jpost('/secret',{on:on?1:0}); me.secret_mode=on?1:0; await loadProfiles(); toast(on?'シークレットモードをONにしました':'シークレットモードをOFFにしました'); }
+  catch(e){ const cb=document.getElementById('mySecret'); if(cb)cb.checked=!!me.secret_mode; if(e.status===402){ toast(e.message); openUpgrade(); } else toast(e.message); }
+}
 async function openBlockList(){
   try{ const {items}=await api('/blocks');
     const list=items.length?items.map(it=>`

@@ -69,6 +69,7 @@ async function route(request, env, url, ctx) {
   if (p === '/api/unblock'         && m === 'POST') return unblock(request, env);
   if (p === '/api/blocks'          && m === 'GET')  return blocksList(request, env);
   if (p === '/api/privacy'         && m === 'POST') return privacy(request, env);
+  if (p === '/api/secret'          && m === 'POST') return secretMode(request, env);
   if (p === '/api/tags/set'        && m === 'POST') return tagsSet(request, env);
   if (p === '/api/gallery/upload'  && m === 'POST') return galleryUpload(request, env);
   if (p === '/api/gallery/mine'    && m === 'GET')  return galleryMine(request, env);
@@ -147,7 +148,7 @@ async function me(request, env) {
   if (!uid) return json({ error: 'unauthorized' }, 401);
   await env.DB.prepare('UPDATE profiles SET last_active=? WHERE user_id=?').bind(Date.now(), uid).run();
   const u = await env.DB.prepare(
-    `SELECT u.id,u.email,u.plan,u.email_verified,u.banned,u.is_admin,p.display_name,p.gender,p.age,p.area,p.tagline,p.bio,p.verified,p.photo_key,p.private_mode,
+    `SELECT u.id,u.email,u.plan,u.email_verified,u.banned,u.is_admin,p.display_name,p.gender,p.age,p.area,p.tagline,p.bio,p.verified,p.photo_key,p.private_mode,p.secret_mode,
             p.marital,p.children,p.job,p.income,p.education,p.height,p.body_type,p.drinking,p.smoking,p.holiday,p.avail,p.purpose
      FROM users u LEFT JOIN profiles p ON p.user_id=u.id WHERE u.id=?`).bind(uid).first();
   if (u && u.banned) return json({ banned: true });
@@ -257,7 +258,12 @@ async function listProfiles(request, env, url) {
     if (q.get('q')) { const kw = '%' + q.get('q').slice(0, 50) + '%'; where.push('(display_name LIKE ? OR tagline LIKE ? OR bio LIKE ?)'); bind.push(kw, kw, kw); }
     if (q.get('verified') === '1') where.push('verified=1');
     if (q.get('online') === '1') { where.push('last_active>?'); bind.push(Date.now() - 5 * 60000); }
-    if (q.get('tag')) { where.push('EXISTS (SELECT 1 FROM profile_tags t WHERE t.user_id=profiles.user_id AND t.tag=?)'); bind.push(q.get('tag')); }
+    const tags = q.getAll('tag').filter(Boolean);
+    if (tags.length) {
+      const ph = tags.map(() => '?').join(',');
+      where.push(`EXISTS (SELECT 1 FROM profile_tags t WHERE t.user_id=profiles.user_id AND t.tag IN (${ph}))`);
+      bind.push(...tags);
+    }
     for (const f of ['purpose', 'marital', 'children', 'income', 'education', 'body_type', 'drinking', 'smoking', 'holiday']) {
       if (q.get(f)) { where.push(`${f}=?`); bind.push(q.get(f)); }
     }
@@ -272,11 +278,12 @@ async function listProfiles(request, env, url) {
     where.push('user_id!=?'); bind.push(uid);
     where.push('NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=profiles.user_id) OR (b.blocker_id=profiles.user_id AND b.blocked_id=?))');
     bind.push(uid, uid);
-    where.push('(private_mode=0 OR EXISTS (SELECT 1 FROM likes l WHERE l.from_id=profiles.user_id AND l.to_id=?))');
+    // 身バレ防止/シークレットモードの相手は、自分がいいねされている場合のみ表示
+    where.push('((private_mode=0 AND secret_mode=0) OR EXISTS (SELECT 1 FROM likes l WHERE l.from_id=profiles.user_id AND l.to_id=?))');
     bind.push(uid);
   } else {
     if (q.get('gender')) { where.push('gender=?'); bind.push(q.get('gender')); }
-    where.push('private_mode=0');
+    where.push('private_mode=0 AND secret_mode=0');
   }
   const limit = Math.min(Number(q.get('limit') || 24), 48), offset = Number(q.get('offset') || 0);
   // 並べ替えはスタンダード以上のみ（フリーは常にアクティブ順）
@@ -412,10 +419,13 @@ async function profileOne(request, env, url) {
     .bind(id).first();
   if (!p) return json({ error: 'not found' }, 404);
   if (uid && uid !== id) {
-    await env.DB.prepare(
-      `INSERT INTO footprints (viewer_id,owner_id,last_at) VALUES (?,?,?)
-       ON CONFLICT(viewer_id,owner_id) DO UPDATE SET last_at=excluded.last_at, cnt=cnt+1`)
-      .bind(uid, id, Date.now()).run();
+    const vm = await env.DB.prepare('SELECT secret_mode FROM profiles WHERE user_id=?').bind(uid).first();
+    if (!vm?.secret_mode) {  // シークレットモード中は足跡を残さない
+      await env.DB.prepare(
+        `INSERT INTO footprints (viewer_id,owner_id,last_at) VALUES (?,?,?)
+         ON CONFLICT(viewer_id,owner_id) DO UPDATE SET last_at=excluded.last_at, cnt=cnt+1`)
+        .bind(uid, id, Date.now()).run();
+    }
   }
   const ph = await env.DB.prepare('SELECT key FROM profile_photos WHERE user_id=? ORDER BY created_at ASC').bind(id).all();
   let photos = ph.results.map(r => r.key);
@@ -590,6 +600,18 @@ async function privacy(request, env) {
   const { private_mode } = await request.json();
   await env.DB.prepare('UPDATE profiles SET private_mode=? WHERE user_id=?').bind(private_mode ? 1 : 0, uid).run();
   return json({ ok: true });
+}
+
+// シークレットモード（プレミアム限定）: 足跡を残さず、検索・一覧に出ない
+async function secretMode(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { on } = await request.json();
+  const u = await env.DB.prepare('SELECT plan FROM users WHERE id=?').bind(uid).first();
+  if (u?.plan !== 'premium')
+    return json({ error: 'シークレットモードはプレミアムプラン限定です', upgrade: true }, 402);
+  await env.DB.prepare('UPDATE profiles SET secret_mode=? WHERE user_id=?').bind(on ? 1 : 0, uid).run();
+  return json({ ok: true, secret_mode: on ? 1 : 0 });
 }
 
 async function tagsSet(request, env) {
@@ -1009,6 +1031,9 @@ async function stripeWebhook(request, env) {
   }
   if (event.type === 'customer.subscription.deleted') {
     await env.DB.prepare(`UPDATE users SET plan='free' WHERE id=(SELECT user_id FROM subscriptions WHERE stripe_sub_id=?)`)
+      .bind(obj.id).run();
+    // プレミアム限定のシークレットモードを解除
+    await env.DB.prepare(`UPDATE profiles SET secret_mode=0 WHERE user_id=(SELECT user_id FROM subscriptions WHERE stripe_sub_id=?)`)
       .bind(obj.id).run();
     await env.DB.prepare('UPDATE subscriptions SET status=?, updated_at=? WHERE stripe_sub_id=?')
       .bind('canceled', now, obj.id).run();
