@@ -23,6 +23,8 @@ function monthStartMs() {
 }
 // 「あなたに興味があるユーザー」判定: 閲覧2回以上 または 滞在5秒以上
 const INTEREST_VISITS = 2, INTEREST_DWELL_MS = 5000;
+// プラン切替を許可する管理用アカウント（logo / 管理）
+const DEV_EMAILS = ['trustlogi2023@gmail.com', 'jp.lab.diamond@gmail.com'];
 
 export default {
   async fetch(request, env, ctx) {
@@ -70,6 +72,7 @@ async function route(request, env, url, ctx) {
   if (p === '/api/blocks'          && m === 'GET')  return blocksList(request, env);
   if (p === '/api/privacy'         && m === 'POST') return privacy(request, env);
   if (p === '/api/secret'          && m === 'POST') return secretMode(request, env);
+  if (p === '/api/dev/plan'        && m === 'POST') return devSetPlan(request, env);
   if (p === '/api/tags/set'        && m === 'POST') return tagsSet(request, env);
   if (p === '/api/gallery/upload'  && m === 'POST') return galleryUpload(request, env);
   if (p === '/api/gallery/mine'    && m === 'GET')  return galleryMine(request, env);
@@ -161,6 +164,7 @@ async function me(request, env) {
     const vr = await env.DB.prepare('SELECT status FROM verifications WHERE user_id=?').bind(uid).first();
     u.verification_status = u.verified ? 'approved' : (vr ? vr.status : 'none');
     u.limits = limitsForClient(u.plan);
+    u.can_switch_plan = DEV_EMAILS.includes(u.email) ? 1 : 0;
     const lc = await env.DB.prepare('SELECT COUNT(*) AS c FROM likes WHERE from_id=? AND created_at>=?').bind(uid, monthStartMs()).first();
     u.likes_used = lc.c || 0;
   }
@@ -257,7 +261,7 @@ async function listProfiles(request, env, url) {
   if (adv) {
     if (q.get('q')) { const kw = '%' + q.get('q').slice(0, 50) + '%'; where.push('(display_name LIKE ? OR tagline LIKE ? OR bio LIKE ?)'); bind.push(kw, kw, kw); }
     if (q.get('verified') === '1') where.push('verified=1');
-    if (q.get('online') === '1') { where.push('last_active>?'); bind.push(Date.now() - 5 * 60000); }
+    if (q.get('online') === '1') { where.push('last_active>?'); bind.push(Date.now() - 60 * 60000); }
     const tags = q.getAll('tag').filter(Boolean);
     if (tags.length) {
       const ph = tags.map(() => '?').join(',');
@@ -612,6 +616,19 @@ async function secretMode(request, env) {
     return json({ error: 'シークレットモードはプレミアムプラン限定です', upgrade: true }, 402);
   await env.DB.prepare('UPDATE profiles SET secret_mode=? WHERE user_id=?').bind(on ? 1 : 0, uid).run();
   return json({ ok: true, secret_mode: on ? 1 : 0 });
+}
+
+// 管理用: 自分のプランを切り替え（DEV_EMAILSのアカウントのみ）
+async function devSetPlan(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const u = await env.DB.prepare('SELECT email FROM users WHERE id=?').bind(uid).first();
+  if (!u || !DEV_EMAILS.includes(u.email)) return json({ error: 'forbidden' }, 403);
+  const { plan } = await request.json();
+  if (!['free', 'standard', 'premium'].includes(plan)) return json({ error: 'invalid plan' }, 400);
+  await env.DB.prepare('UPDATE users SET plan=? WHERE id=?').bind(plan, uid).run();
+  if (plan !== 'premium') await env.DB.prepare('UPDATE profiles SET secret_mode=0 WHERE user_id=?').bind(uid).run();
+  return json({ ok: true, plan });
 }
 
 async function tagsSet(request, env) {

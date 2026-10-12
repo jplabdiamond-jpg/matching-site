@@ -472,7 +472,7 @@ function fmtTime(ts){
   const sameDay=d.toDateString()===now.toDateString();
   return sameDay?d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}):`${d.getMonth()+1}/${d.getDate()}`;
 }
-function isOnline(ts){ return ts && (Date.now()-ts)<5*60000; }
+function isOnline(ts){ return ts && (Date.now()-ts)<60*60000; }
 function activeLabel(ts){
   if(!ts)return'';
   const m=Math.floor((Date.now()-ts)/60000);
@@ -911,6 +911,15 @@ async function renderMyPagePage(){
       <button class="solid full" onclick="openMyEdit()">プロフィールを編集</button>
     </div>
 
+    ${me.can_switch_plan?`<div class="mp-card">
+      <div style="font-weight:600;font-size:13px;color:var(--anchor);margin-bottom:8px">プラン切替（管理用）</div>
+      <div class="seg">
+        <button class="${me.plan==='free'?'on':''}" onclick="switchPlan('free')">フリー</button>
+        <button class="${me.plan==='standard'?'on':''}" onclick="switchPlan('standard')">スタンダード</button>
+        <button class="${me.plan==='premium'?'on':''}" onclick="switchPlan('premium')">プレミアム</button>
+      </div>
+    </div>`:''}
+
     ${me.plan==='free'?`<div class="mp-card" style="background:linear-gradient(135deg,#fff,var(--soft2))">
       <div style="font-family:'Shippori Mincho',serif;color:var(--anchor);font-size:16px;margin-bottom:4px">メッセージを始めませんか？</div>
       <p class="note" style="margin:0 0 10px">スタンダードプラン以上で、マッチした相手へメッセージを送れます。</p>
@@ -1306,6 +1315,10 @@ async function togglePrivacy(on){ try{await jpost('/privacy',{private_mode:on?1:
 async function toggleSecret(on){
   try{ await jpost('/secret',{on:on?1:0}); me.secret_mode=on?1:0; await loadProfiles(); toast(on?'シークレットモードをONにしました':'シークレットモードをOFFにしました'); }
   catch(e){ const cb=document.getElementById('mySecret'); if(cb)cb.checked=!!me.secret_mode; if(e.status===402){ toast(e.message); openUpgrade(); } else toast(e.message); }
+}
+async function switchPlan(plan){
+  try{ await jpost('/dev/plan',{plan}); await loadMe(); await loadProfiles(); renderMyPagePage(); toast('プランを'+({free:'フリー',standard:'スタンダード',premium:'プレミアム'}[plan]||plan)+'に切り替えました'); }
+  catch(e){ toast(e.message); }
 }
 async function openBlockList(){
   try{ const {items}=await api('/blocks');
