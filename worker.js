@@ -5,9 +5,9 @@
 
 const INF = Infinity;
 const PLANS = {
-  free:     { likesPerMonth: 10,  msgPerMatch: 3,   gallery: 1,  footprints: 3,    advSearch: false, sortable: false, likesReveal: 1,   boost: false },
-  standard: { likesPerMonth: 30,  msgPerMatch: INF, gallery: 5,  footprints: 10,   advSearch: true,  sortable: true,  likesReveal: INF, boost: false },
-  premium:  { likesPerMonth: INF, msgPerMatch: INF, gallery: 10, footprints: 1000, advSearch: true,  sortable: true,  likesReveal: INF, boost: true  },
+  free:     { likesPerMonth: 10,  msgPerMatch: 3,   gallery: 1,  footprints: 3,    advSearch: false, sortable: false, likesReveal: 1,   boost: false, paid: false },
+  standard: { likesPerMonth: 30,  msgPerMatch: INF, gallery: 5,  footprints: 10,   advSearch: true,  sortable: true,  likesReveal: INF, boost: false, paid: true  },
+  premium:  { likesPerMonth: INF, msgPerMatch: INF, gallery: 10, footprints: 1000, advSearch: true,  sortable: true,  likesReveal: INF, boost: true,  paid: true  },
 };
 function planLimits(plan) { return PLANS[plan] || PLANS.free; }
 // Infinity を JSON 用に -1（無制限）へ
@@ -50,6 +50,9 @@ async function route(request, env, url, ctx) {
   if (p === '/api/onboard'  && m === 'POST') return onboard(request, env);
   if (p === '/api/profiles' && m === 'GET')  return listProfiles(request, env, url);
   if (p === '/api/like'     && m === 'POST') return like(request, env, ctx);
+  if (p === '/api/pass'     && m === 'POST') return passProfile(request, env);
+  if (p === '/api/favorite' && m === 'POST') return favorite(request, env);
+  if (p === '/api/favorites'&& m === 'GET')  return favoritesList(request, env);
   if (p === '/api/matches'  && m === 'GET')  return listMatches(request, env);
   if (p === '/api/likes/received' && m === 'GET') return likesReceived(request, env);
   if (p === '/api/footprints'     && m === 'GET') return footprints(request, env);
@@ -285,13 +288,27 @@ async function listProfiles(request, env, url) {
     // 身バレ防止/シークレットモードの相手は、自分がいいねされている場合のみ表示
     where.push('((private_mode=0 AND secret_mode=0) OR EXISTS (SELECT 1 FROM likes l WHERE l.from_id=profiles.user_id AND l.to_id=?))');
     bind.push(uid);
+    // 拒否した相手はどこでも表示しない
+    where.push('NOT EXISTS (SELECT 1 FROM passes ps WHERE ps.user_id=? AND ps.target_id=profiles.user_id)');
+    bind.push(uid);
+    // スワイプデッキでは、すでにいいね済みの相手も除外
+    if (q.get('deck') === '1') {
+      where.push('NOT EXISTS (SELECT 1 FROM likes lk WHERE lk.from_id=? AND lk.to_id=profiles.user_id)');
+      bind.push(uid);
+    }
   } else {
     if (q.get('gender')) { where.push('gender=?'); bind.push(q.get('gender')); }
     where.push('private_mode=0 AND secret_mode=0');
   }
   const limit = Math.min(Number(q.get('limit') || 24), 48), offset = Number(q.get('offset') || 0);
   // 並べ替えはスタンダード以上のみ（フリーは常にアクティブ順）
-  const base = (lim.sortable && q.get('sort') === 'new') ? 'created_at DESC' : 'last_active DESC';
+  const sort = lim.sortable ? q.get('sort') : '';
+  // 人気順 = お気に入りされた数 + 同じユーザーから2回以上見られた数 の合計ポイント
+  const popExpr = '((SELECT COUNT(*) FROM favorites fv WHERE fv.target_id=profiles.user_id)+(SELECT COUNT(*) FROM footprints fpp WHERE fpp.owner_id=profiles.user_id AND fpp.cnt>=2))';
+  let base;
+  if (sort === 'popular')   base = `${popExpr} DESC, last_active DESC`;
+  else if (sort === 'new')  base = 'created_at DESC';
+  else                      base = 'last_active DESC';
   // プレミアム会員を常に上位表示
   const order = `(SELECT plan FROM users pu WHERE pu.id=profiles.user_id)='premium' DESC, ${base}`;
   const rows = await env.DB.prepare(
@@ -306,12 +323,16 @@ async function like(request, env, ctx) {
   const uid = await auth(request, env);
   if (!uid) return json({ error: 'unauthorized' }, 401);
   if (await isBanned(env, uid)) return json({ error: 'アカウントが停止されています' }, 403);
-  const { to_id } = await request.json();
+  const { to_id, message } = await request.json();
   if (!to_id || to_id === uid) return json({ error: 'invalid target' }, 400);
+  const msg = (message || '').toString().trim().slice(0, 200);
   const now = Date.now();
+  const u = await env.DB.prepare('SELECT plan FROM users WHERE id=?').bind(uid).first();
+  // メッセージ付きいいねはスタンダード以上
+  if (msg && !planLimits(u?.plan).paid)
+    return json({ error: 'メッセージ付きいいねはスタンダードプラン以上でご利用いただけます', upgrade: true }, 402);
   const existed = await env.DB.prepare('SELECT 1 FROM likes WHERE from_id=? AND to_id=?').bind(uid, to_id).first();
   if (!existed) {
-    const u = await env.DB.prepare('SELECT plan FROM users WHERE id=?').bind(uid).first();
     const limit = planLimits(u?.plan).likesPerMonth;
     if (limit !== INF) {
       const used = await env.DB.prepare('SELECT COUNT(*) AS c FROM likes WHERE from_id=? AND created_at>=?').bind(uid, monthStartMs()).first();
@@ -319,8 +340,10 @@ async function like(request, env, ctx) {
         return json({ error: `今月の「いいね」上限（${limit}回）に達しました。プランをアップグレードすると増やせます`, upgrade: true, limit }, 402);
     }
   }
-  await env.DB.prepare('INSERT OR IGNORE INTO likes (from_id,to_id,created_at) VALUES (?,?,?)')
-    .bind(uid, to_id, now).run();
+  await env.DB.prepare('INSERT INTO likes (from_id,to_id,created_at,message) VALUES (?,?,?,?) ON CONFLICT(from_id,to_id) DO UPDATE SET message=COALESCE(excluded.message,message)')
+    .bind(uid, to_id, now, msg || null).run();
+  // いいね/メッセージ付きいいねをしたら拒否(pass)は解除
+  await env.DB.prepare('DELETE FROM passes WHERE user_id=? AND target_id=?').bind(uid, to_id).run();
   if (!existed) notifyUser(env, ctx, to_id);
   const back = await env.DB.prepare('SELECT 1 FROM likes WHERE from_id=? AND to_id=?').bind(to_id, uid).first();
   if (back) {
@@ -346,7 +369,7 @@ async function likesReceived(request, env) {
   const uid = await auth(request, env);
   if (!uid) return json({ error: 'unauthorized' }, 401);
   const rows = await env.DB.prepare(
-    `SELECT p.user_id,p.display_name,p.gender,p.age,p.area,p.tagline,p.photo_key,p.verified,l.created_at
+    `SELECT p.user_id,p.display_name,p.gender,p.age,p.area,p.tagline,p.photo_key,p.verified,l.created_at,l.message
      FROM likes l JOIN profiles p ON p.user_id = l.from_id
      WHERE l.to_id = ?
        AND NOT EXISTS (SELECT 1 FROM likes l2 WHERE l2.from_id = ? AND l2.to_id = l.from_id)
@@ -438,6 +461,50 @@ async function profileOne(request, env, url) {
   const tg = await env.DB.prepare('SELECT tag FROM profile_tags WHERE user_id=?').bind(id).all();
   p.tags = tg.results.map(r => r.tag);
   return json(p);
+}
+
+// スワイプの「拒否」: 今後おすすめに出さない
+async function passProfile(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const { target_id, kind } = await request.json();
+  if (!target_id || target_id === uid) return json({ error: 'invalid target' }, 400);
+  await env.DB.prepare('INSERT OR REPLACE INTO passes (user_id,target_id,kind,created_at) VALUES (?,?,?,?)')
+    .bind(uid, target_id, kind === 'skip' ? 'skip' : 'reject', Date.now()).run();
+  return json({ ok: true });
+}
+
+// お気に入り（スタンダード以上）
+async function favorite(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const u = await env.DB.prepare('SELECT plan FROM users WHERE id=?').bind(uid).first();
+  if (!planLimits(u?.plan).paid)
+    return json({ error: 'お気に入り機能はスタンダードプラン以上でご利用いただけます', upgrade: true }, 402);
+  const { target_id, on } = await request.json();
+  if (!target_id || target_id === uid) return json({ error: 'invalid target' }, 400);
+  if (on === 0 || on === false)
+    await env.DB.prepare('DELETE FROM favorites WHERE user_id=? AND target_id=?').bind(uid, target_id).run();
+  else
+    await env.DB.prepare('INSERT OR IGNORE INTO favorites (user_id,target_id,created_at) VALUES (?,?,?)').bind(uid, target_id, Date.now()).run();
+  return json({ ok: true, favorited: !(on === 0 || on === false) });
+}
+
+// お気に入り一覧（スタンダード以上）
+async function favoritesList(request, env) {
+  const uid = await auth(request, env);
+  if (!uid) return json({ error: 'unauthorized' }, 401);
+  const u = await env.DB.prepare('SELECT plan FROM users WHERE id=?').bind(uid).first();
+  if (!planLimits(u?.plan).paid)
+    return json({ error: 'お気に入り機能はスタンダードプラン以上でご利用いただけます', upgrade: true }, 402);
+  const rows = await env.DB.prepare(
+    `SELECT p.user_id,p.display_name,p.gender,p.age,p.area,p.tagline,p.photo_key,p.verified,p.last_active,f.created_at
+     FROM favorites f JOIN profiles p ON p.user_id=f.target_id
+     WHERE f.user_id=?
+       AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=f.target_id) OR (b.blocker_id=f.target_id AND b.blocked_id=?))
+       AND NOT EXISTS (SELECT 1 FROM users us WHERE us.id=f.target_id AND us.banned=1)
+     ORDER BY f.created_at DESC LIMIT 200`).bind(uid, uid, uid).all();
+  return json({ items: rows.results });
 }
 
 async function footprints(request, env) {

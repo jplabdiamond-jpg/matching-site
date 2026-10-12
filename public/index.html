@@ -108,6 +108,34 @@
   .locked-card{border:1px dashed var(--line);border-radius:12px;padding:16px;background:var(--soft);text-align:center}
   .lav-blur{display:grid;place-items:center;background:linear-gradient(135deg,#C9BCC2,#9b8a93);color:#fff;font-size:22px}
   .lcard.blur .lbody .name b{letter-spacing:2px}
+  /* swipe deck */
+  .deck{max-width:380px;margin:4px auto 0;padding:0 16px}
+  .swipe-card{background:var(--surface);border-radius:20px;overflow:hidden;box-shadow:0 12px 34px rgba(44,36,48,.14);cursor:pointer}
+  .sc-photo{position:relative;width:100%;aspect-ratio:4/5;background:var(--line)}
+  .sc-photo img{width:100%;height:100%;object-fit:cover;display:block}
+  .sc-ini{width:100%;height:100%;display:grid;place-items:center;font-family:"Shippori Mincho",serif;font-size:80px;color:#fff}
+  .sc-online{position:absolute;top:12px;left:12px;background:rgba(44,36,48,.6);color:#fff;font-size:12px;padding:4px 10px;border-radius:999px}
+  .sc-verified{position:absolute;top:12px;right:12px;background:var(--safe);color:#fff;font-size:11px;padding:4px 10px;border-radius:999px}
+  .sc-info{padding:14px 16px 16px}
+  .sc-name{font-weight:700;font-size:20px;color:var(--ink)}.sc-name span{color:var(--muted);font-weight:400;font-size:16px}
+  .sc-meta{color:var(--muted);font-size:13px;margin-top:3px}
+  .sc-tag{margin-top:8px;color:#6a5d64;font-size:14px}
+  .deck-actions{display:flex;justify-content:center;gap:10px;margin:16px auto 2px}
+  .act-btn{width:54px;height:54px;border-radius:50%;border:none;background:var(--surface);box-shadow:0 4px 12px rgba(44,36,48,.14);font-size:22px;cursor:pointer;display:grid;place-items:center;line-height:1;transition:transform .1s}
+  .act-btn:active{transform:scale(.9)}
+  .act-btn.skip{color:#b0a2a8}.act-btn.reject{color:#5c5560}.act-btn.like{color:var(--notify)}.act-btn.msg{color:var(--anchor)}.act-btn.fav{color:#e0a73a}
+  .deck-actions-lbl{display:flex;justify-content:center;gap:10px;color:var(--muted);font-size:10px}
+  .deck-actions-lbl span{width:54px;text-align:center}
+  .like-msg{margin:4px 0 2px;background:#F7EFED;border-radius:10px;padding:8px 11px;color:#5c4650;font-size:13.5px;line-height:1.5;display:flex;gap:6px;align-items:flex-start}
+  .like-msg .ic-svg{flex:none;margin-top:2px;color:var(--anchor)}
+  /* 探す 上部カテゴリーカード */
+  .cat-cards{display:flex;gap:12px;margin:0 0 18px}
+  .cat-card{flex:1;border-radius:16px;padding:22px 14px;text-align:center;cursor:pointer;color:#fff;box-shadow:0 8px 22px rgba(44,36,48,.14)}
+  .cat-card.pop{background:linear-gradient(135deg,#C56B72,#5C2A45)}
+  .cat-card.new{background:linear-gradient(135deg,#7C6A9C,#3f3557)}
+  .cat-card .ct{font-family:"Shippori Mincho",serif;font-size:17px;font-weight:600}
+  .cat-card .cs{font-size:11px;opacity:.85;margin-top:4px}
+  .cat-card.locked{filter:grayscale(.3);opacity:.9}
   .convlist{flex:1;overflow:auto;padding:6px 0}
   .crow{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer}
   .crow:hover{background:#F7EFED}
@@ -293,12 +321,13 @@
 </nav>
 
 <main id="view-home">
-  <section class="lead">
+  <section class="lead" id="homeLead">
     <h1>同じ立場だからこそ、<br>肩の力を抜いて話せる。</h1>
     <p>安心してつながることを大切にした、大人のためのマッチング。気になる人をタップしてプロフィールを見てみてください。</p>
   </section>
-  <div class="secttl"><h2>おすすめのお相手</h2><span class="sub" id="homeSub">アクティブ順</span></div>
+  <div class="secttl" id="homeSecTtl"><h2>おすすめのお相手</h2><span class="sub" id="homeSub">アクティブ順</span></div>
   <div id="tagFilterBar" style="max-width:1080px;margin:10px auto 0;padding:0 20px;display:none"></div>
+  <div class="deck" id="deck" style="display:none"></div>
   <div class="grid" id="grid"></div>
 </main>
 
@@ -306,6 +335,13 @@
 <section class="page" id="view-search">
   <div class="pbar"><button class="back" onclick="goHome()">←</button><h2>さがす</h2></div>
   <div class="pbody pad" id="searchBody"></div>
+</section>
+
+<!-- 会員一覧（人気・最近・検索・お気に入り） -->
+<section class="page" id="view-browse">
+  <div class="pbar"><button class="back" onclick="browseBack()">←</button><h2 id="browseTitle">会員一覧</h2></div>
+  <div id="browseSort" class="pad" style="padding-top:10px;padding-bottom:0"></div>
+  <div class="pbody pad" id="browseBody"></div>
 </section>
 
 <!-- 相手から（いいね / 足あと） -->
@@ -382,6 +418,7 @@
 <div class="scrim" id="onboardScrim"><div class="modal" id="onboardModal"></div></div>
 <div class="scrim" id="myScrim"><div class="modal" id="myModal"></div></div>
 <div class="scrim" id="galleryScrim"><div class="modal" id="galleryModal"></div></div>
+<div class="scrim" id="msgScrim"><div class="modal" id="msgModal"></div></div>
 
 <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" style="display:none">
 <input type="file" id="verifyInput" accept="image/jpeg,image/png,image/webp,application/pdf" style="display:none">
@@ -397,6 +434,8 @@ const grad=s=>GRAD[[...String(s)].reduce((a,c)=>a+c.charCodeAt(0),0)%GRAD.length
 const gLabel={female:'女性',male:'男性',other:'その他'};
 const ICONS={
   heart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8L12 21.2l8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/>',
+  skip:'<path d="M5 5v14M9 12l9-7v14z"/>',
+  close:'<path d="M6 6l12 12M18 6 6 18"/>',
   ring:'<circle cx="12" cy="14.5" r="5.3"/><path d="M8.6 9 10 4.2h4L15.4 9"/>',
   child:'<circle cx="12" cy="8" r="3.8"/><path d="M6.2 21c0-3.2 2.6-5.8 5.8-5.8s5.8 2.6 5.8 5.8"/>',
   briefcase:'<rect x="2.6" y="7.6" width="18.8" height="12.8" rx="2"/><path d="M8.5 7.6V6a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v1.6"/><path d="M2.6 13h18.8"/>',
@@ -556,6 +595,8 @@ async function loadProfiles(reset=true){
 function anyPageOpen(){ return !!document.querySelector('.page.on'); }
 window.addEventListener('scroll',()=>{
   if(anyPageOpen())return;
+  const grid=document.getElementById('grid');
+  if(!grid||grid.style.display==='none')return; // スワイプデッキ表示中はグリッド読み込みしない
   if((window.innerHeight+window.scrollY)>=document.body.offsetHeight-600) loadProfiles(false);
 });
 function renderTagBar(){
@@ -567,6 +608,186 @@ function setTagFilter(t){ tagFilters=[t]; renderTagBar(); loadProfiles(true); wi
 function removeTagFilter(t){ tagFilters=tagFilters.filter(x=>x!==t); renderTagBar(); loadProfiles(true); }
 function clearTagFilter(){ tagFilters=[]; renderTagBar(); loadProfiles(true); }
 function filterByTag(t){ closeProfile(); closeModals(); goHome(); setTagFilter(t); }
+
+/* ---- トップ：スワイプ（おすすめ） ---- */
+function renderHome(){
+  const deck=document.getElementById('deck'), grid=document.getElementById('grid');
+  const lead=document.getElementById('homeLead'), sec=document.getElementById('homeSecTtl'), bar=document.getElementById('tagFilterBar');
+  if(me){
+    // ログイン時：1枚ずつのスワイプ
+    deck.style.display=''; grid.style.display='none';
+    if(lead) lead.style.display='none';
+    if(sec){ sec.style.display=''; sec.querySelector('.sub').textContent='あなたへのおすすめ'; }
+    if(bar) bar.style.display='none';
+    loadDeck();
+  }else{
+    // 未ログイン：従来のグリッド
+    deck.style.display='none'; grid.style.display='';
+    if(lead) lead.style.display='';
+    if(sec) sec.style.display='';
+    loadProfiles(true);
+  }
+}
+let deckItems=[], deckIdx=0, deckLoading=false, deckSeen=new Set();
+async function loadDeck(force=false){
+  if(deckLoading) return;
+  if(!force && deckIdx < deckItems.length){ renderDeckCard(); return; }
+  deckLoading=true;
+  const deck=document.getElementById('deck');
+  deck.innerHTML='<p class="empty" style="padding:40px 0;text-align:center;color:var(--muted)">読み込み中…</p>';
+  try{
+    const {items}=await api('/profiles?deck=1&limit=40');
+    deckItems=(items||[]).filter(it=>!deckSeen.has(it.user_id));
+    deckIdx=0;
+    renderDeckCard();
+  }catch(e){ deck.innerHTML=`<p class="empty" style="padding:40px 0;text-align:center">${esc(e.message)}</p>`; }
+  deckLoading=false;
+}
+function renderDeckCard(){
+  const deck=document.getElementById('deck');
+  const it=deckItems[deckIdx];
+  if(!it){
+    deck.innerHTML=`<div class="swipe-card" style="cursor:default"><div class="sc-info" style="text-align:center;padding:48px 16px">
+      <div class="sc-name" style="justify-content:center">ひと通り見終わりました</div>
+      <p class="sc-meta" style="margin:10px 0 18px">時間をおくと新しいお相手が表示されます。</p>
+      <button class="solid" onclick="reloadDeck()">もう一度見る</button>
+    </div></div>`;
+    return;
+  }
+  const online=isOnline(it.last_active);
+  const photo=it.photo_key
+    ? `<img src="${photoURL(it.photo_key)}" alt="">`
+    : `<div class="sc-ini" style="background:${grad(it.display_name)}">${esc(String(it.display_name)[0]||'?')}</div>`;
+  const paid=!!(me&&me.limits&&me.limits.paid);
+  deck.innerHTML=`
+    <div class="swipe-card" onclick="deckOpen()">
+      <div class="sc-photo">${photo}
+        ${online?'<div class="sc-online">オンライン中</div>':''}
+        ${it.verified?'<div class="sc-verified">本人確認済み</div>':''}
+      </div>
+      <div class="sc-info">
+        <div class="sc-name">${esc(it.display_name)} <span>${it.age}歳</span></div>
+        <div class="sc-meta">${esc(it.area||'')}${it.last_active?' ・ '+activeLabel(it.last_active):''}</div>
+        ${it.tagline?`<div class="sc-tag">${esc(it.tagline)}</div>`:''}
+      </div>
+    </div>
+    <div class="deck-actions">
+      <button class="act-btn skip" title="スキップ" onclick="deckSkip()">${svg('skip')||'↷'}</button>
+      <button class="act-btn reject" title="拒否" onclick="deckReject()">${svg('close')||'✕'}</button>
+      <button class="act-btn like" title="いいね" onclick="deckLike()">${svg('heart')||'♥'}</button>
+      <button class="act-btn msg" title="メッセージ付きいいね" onclick="deckMsgLike()">${svg('chat')||'✉'}</button>
+      <button class="act-btn fav" title="お気に入り" onclick="deckFav()">${svg('star')||'☆'}</button>
+    </div>
+    <div class="deck-actions-lbl"><span>スキップ</span><span>拒否</span><span>いいね</span><span>メッセージ</span><span>お気に入り</span></div>`;
+}
+function deckCurrent(){ return deckItems[deckIdx]; }
+function deckAdvance(){ const it=deckItems[deckIdx]; if(it) deckSeen.add(it.user_id); deckIdx++; if(deckIdx>=deckItems.length){ loadDeck(true); } else { renderDeckCard(); } }
+function deckOpen(){ const it=deckCurrent(); if(it) openProfileById(it.user_id); }
+function deckSkip(){ /* 保留：サーバー保存せず、今回のみ後ろへ */ const it=deckItems[deckIdx]; if(it){ deckItems.push(it); } deckIdx++; if(deckIdx>=deckItems.length){ loadDeck(true); } else { renderDeckCard(); } }
+async function deckReject(){
+  const it=deckCurrent(); if(!it)return;
+  try{ await jpost('/pass',{target_id:it.user_id,kind:'reject'}); }catch(e){}
+  deckAdvance();
+}
+async function deckLike(){
+  const it=deckCurrent(); if(!it)return;
+  try{ const r=await jpost('/like',{to_id:it.user_id}); toast(r.matched?'マッチしました！トークから話しかけられます':'いいねを送りました'); pollUnread(); }
+  catch(e){ if(e.status===402){ toast(e.message); openUpgrade(); return; } toast(e.message); }
+  deckAdvance();
+}
+function deckMsgLike(){
+  const it=deckCurrent(); if(!it)return;
+  if(!(me&&me.limits&&me.limits.paid)){ toast('メッセージ付きいいねはスタンダードプラン以上でご利用いただけます'); openUpgrade(); return; }
+  document.getElementById('msgModal').innerHTML=`
+    <h2>メッセージ付きいいね</h2>
+    <p class="note" style="margin:2px 0 14px">${esc(it.display_name)}さんへ、ひとことメッセージを添えて「いいね」を送れます。（最大200文字）</p>
+    <textarea id="msgText" rows="4" maxlength="200" placeholder="はじめまして。プロフィールを拝見して…" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px;resize:vertical"></textarea>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="solid full" onclick="deckMsgSend('${it.user_id}')">この内容で送る</button>
+      <button class="ghost" style="flex:none;padding:12px 16px" onclick="document.getElementById('msgScrim').classList.remove('on')">やめる</button>
+    </div>`;
+  document.getElementById('msgScrim').classList.add('on');
+  setTimeout(()=>document.getElementById('msgText')?.focus(),50);
+}
+async function deckMsgSend(to){
+  const msg=(document.getElementById('msgText')?.value||'').trim();
+  if(!msg){ toast('メッセージを入力してください'); return; }
+  try{
+    const r=await jpost('/like',{to_id:to,message:msg});
+    document.getElementById('msgScrim').classList.remove('on');
+    toast(r.matched?'マッチしました！トークから話しかけられます':'メッセージ付きいいねを送りました');
+    pollUnread(); deckAdvance();
+  }catch(e){ if(e.status===402){ toast(e.message); openUpgrade(); } else toast(e.message); }
+}
+async function deckFav(){
+  const it=deckCurrent(); if(!it)return;
+  if(!(me&&me.limits&&me.limits.paid)){ toast('お気に入り機能はスタンダードプラン以上でご利用いただけます'); openUpgrade(); return; }
+  try{ const r=await jpost('/favorite',{target_id:it.user_id}); toast(r.favorited?'お気に入りに追加しました':'お気に入りから外しました'); }
+  catch(e){ if(e.status===402){ toast(e.message); openUpgrade(); return; } toast(e.message); }
+  deckAdvance();
+}
+function reloadDeck(){ deckSeen=new Set(); deckItems=[]; deckIdx=0; loadDeck(true); }
+
+/* ---- 会員一覧（browse）---- */
+let browseMode='popular', browseState={offset:0,loading:false,done:false,sort:''};
+function openBrowse(mode){
+  // 人気・最近・お気に入りはスタンダード以上
+  if((mode==='popular'||mode==='new'||mode==='favorites') && !(me&&me.limits&&me.limits.paid)){
+    toast('この機能はスタンダードプラン以上でご利用いただけます'); openUpgrade(); return;
+  }
+  location.hash='#browse='+mode;
+}
+const BROWSE_TITLES={popular:'人気会員',new:'最近始めた会員',search:'検索結果',favorites:'お気に入り'};
+function renderBrowse(mode){
+  browseMode=mode||'popular';
+  browseState={offset:0,loading:false,done:false,sort:''};
+  document.getElementById('browseTitle').textContent=BROWSE_TITLES[browseMode]||'会員一覧';
+  const sortBox=document.getElementById('browseSort');
+  const sortable=!!(me&&me.limits&&me.limits.sortable);
+  if(sortable && browseMode!=='favorites'){
+    const opts=[['','おすすめ順'],['active','アクティブ順'],['new','新着順'],['popular','人気順']];
+    sortBox.style.display='';
+    sortBox.innerHTML=`<div class="seg">${opts.map(([v,l])=>`<button class="${browseState.sort===v?'on':''}" data-sort="${v}" onclick="setBrowseSort('${v}')">${l}</button>`).join('')}</div>`;
+  }else{ sortBox.style.display='none'; sortBox.innerHTML=''; }
+  const body=document.getElementById('browseBody');
+  body.className='pbody pad';
+  body.innerHTML='<div class="grid" id="browseGrid"></div><div id="browseMore" style="text-align:center;padding:16px 0"></div>';
+  loadBrowse(true);
+}
+function setBrowseSort(v){ browseState.sort=v; document.querySelectorAll('#browseSort .seg button').forEach(b=>b.classList.toggle('on',b.dataset.sort===v)); loadBrowse(true); }
+function browseQS(){
+  const qs=buildQS();
+  qs.set('limit','30'); qs.set('offset',browseState.offset);
+  if(browseMode==='popular') qs.set('sort','popular');
+  else if(browseMode==='new') qs.set('sort','new');
+  if(browseState.sort) qs.set('sort',browseState.sort);
+  return qs;
+}
+async function loadBrowse(reset=true){
+  if(browseState.loading)return;
+  if(reset){ browseState.offset=0; browseState.done=false; const g=document.getElementById('browseGrid'); if(g)g.innerHTML=''; }
+  if(browseState.done)return;
+  browseState.loading=true;
+  const grid=document.getElementById('browseGrid'), more=document.getElementById('browseMore');
+  if(more) more.innerHTML='<span style="color:var(--muted);font-size:13px">読み込み中…</span>';
+  try{
+    let items=[];
+    if(browseMode==='favorites'){
+      const r=await api('/favorites'); items=r.items||[]; browseState.done=true;
+    }else{
+      const r=await api('/profiles?'+browseQS().toString()); items=r.items||[];
+      browseState.offset+=items.length;
+      if(items.length<30) browseState.done=true;
+    }
+    if(browseState.offset===0 && grid && grid.children.length===0 && !items.length){
+      grid.innerHTML=`<p class="empty" style="grid-column:1/-1;text-align:center;color:var(--muted);padding:40px 0">${browseMode==='favorites'?'まだお気に入りはありません。':'条件に合う方が見つかりませんでした。'}</p>`;
+    }
+    for(const it of items) grid.appendChild(renderCard(it));
+    if(more) more.innerHTML = browseState.done ? '' : '<button class="ghost" onclick="loadBrowse(false)">もっと見る</button>';
+  }catch(e){ if(more) more.innerHTML=`<span style="color:var(--notify)">${esc(e.message)}</span>`; }
+  browseState.loading=false;
+}
+function browseBack(){ location.hash = browseMode==='favorites' ? '#mypage' : '#search'; }
 
 /* ---- さがす ---- */
 function openSearch(){
@@ -625,7 +846,19 @@ function renderSearch(){
       <p class="note" style="margin:0 0 12px">キーワード・年収・趣味などの詳細検索や並べ替えは、スタンダードプラン以上でご利用いただけます。</p>
       <button class="solid full" onclick="openUpgrade()">プランを見る</button>
     </div></div>`;
+  const paid=!!(me&&me.limits&&me.limits.paid);
+  const catCards=`
+    <div class="cat-cards">
+      <div class="cat-card pop${paid?'':' locked'}" onclick="openBrowse('popular')">
+        <div class="ct">${paid?'':'🔒 '}人気会員</div><div class="cs">注目を集めている会員</div>
+      </div>
+      <div class="cat-card new${paid?'':' locked'}" onclick="openBrowse('new')">
+        <div class="ct">${paid?'':'🔒 '}最近始めた会員</div><div class="cs">新しく登録した会員</div>
+      </div>
+    </div>
+    ${paid?'':'<p class="note" style="margin:-8px 0 16px;font-size:12px">人気会員・最近始めた会員の一覧は、スタンダードプラン以上でご覧いただけます。</p>'}`;
   document.getElementById('searchBody').innerHTML=`
+    ${catCards}
     <div class="fblock"><div class="fl">エリア</div>
       <select id="sArea" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px;background:#fff">${areaOpts}</select>
     </div>
@@ -666,7 +899,8 @@ function applySearch(){
     tagFilters=[];
   }
   renderTagBar();
-  goHome(); loadProfiles(true); window.scrollTo(0,0);
+  if(me){ location.hash='#browse=search'; }
+  else { goHome(); loadProfiles(true); window.scrollTo(0,0); }
 }
 
 /* ---- プロフィール閲覧の滞在時間トラッキング ---- */
@@ -766,7 +1000,7 @@ function closeProfile(){ flushDwell(); closePfMenu(); const v=document.getElemen
 async function blockFromProfile(id){
   closePfMenu();
   if(!confirm('この相手をブロックしますか？今後お互いに表示されなくなります。'))return;
-  try{ await jpost('/block',{target_id:id}); closeProfile(); await loadProfiles(); await pollUnread(); toast('ブロックしました'); }
+  try{ await jpost('/block',{target_id:id}); closeProfile(); deckItems=[]; deckIdx=0; loadProfiles(); await pollUnread(); toast('ブロックしました'); }
   catch(e){ toast(e.message); }
 }
 async function sendLike(to){
@@ -804,7 +1038,7 @@ async function renderLikesList(){
         <div class="lbody">
           <div class="name"><b>${esc(it.display_name)}</b> ${it.age}</div>
           <div class="meta">${esc(it.area)} ${it.verified?'・<span style="color:var(--safe)">本人確認済み</span>':''}</div>
-          <div class="tag">${esc(it.tagline)}</div>
+          ${it.message?`<div class="like-msg">${svg('chat')} ${esc(it.message)}</div>`:`<div class="tag">${esc(it.tagline)}</div>`}
           <button class="solid" onclick="likeBack('${it.user_id}')">いいねを返す</button>
         </div></div>`).join(''):'<p class="empty">まだ「いいね」は届いていません。<br>プロフィールを充実させると届きやすくなります。</p>';
   }catch(e){ box.innerHTML=`<p class="empty">${esc(e.message)}</p>`; }
@@ -853,7 +1087,7 @@ function openPage(id){ document.getElementById(id).classList.add('on'); document
 async function router(){
   const h=location.hash;
   flushDwell();
-  ['view-messages','view-chat','view-search','view-likes','view-mypage','view-notice','view-profile'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  ['view-messages','view-chat','view-search','view-browse','view-likes','view-mypage','view-notice','view-profile'].forEach(id=>document.getElementById(id).classList.remove('on'));
   document.body.classList.toggle('chat-open', h.startsWith('#chat='));
   closePfMenu();
   stopChatPoll(); exitSelect(); closeChatMenu();
@@ -867,6 +1101,10 @@ async function router(){
     openPage('view-messages'); loadConversations(); setNav('msg');
   }else if(h==='#search'){
     renderSearch(); openPage('view-search'); setNav('search');
+  }else if(h.startsWith('#browse=')){
+    if(!me){location.hash='#search';return;}
+    const mode=h.slice(8);
+    renderBrowse(mode); openPage('view-browse'); setNav('search');
   }else if(h==='#likes'){
     if(!me){location.hash='';openAuth('login');return;}
     openPage('view-likes'); setLikesTab(likesTab); setNav('likes');
@@ -877,7 +1115,7 @@ async function router(){
     renderNotice(); openPage('view-notice'); setNav('notice');
   }else{
     if(!anyPageOpen()) document.body.style.overflow='';
-    setNav('home');
+    setNav('home'); renderHome();
   }
 }
 function syncNavFromHash(){ router(); }
@@ -927,6 +1165,7 @@ async function renderMyPagePage(){
       <button class="solid full" style="margin:0" onclick="openUpgrade()">プランを見る</button>
     </div>`:''}
 
+    ${(me.limits&&me.limits.paid)?`<button class="mp-link" onclick="openBrowse('favorites')"><span class="ic">${svg('star')}</span>お気に入り<span class="ar">›</span></button>`:''}
     <button class="mp-link" onclick="pickVerify()"><span class="ic">${svg('card')}</span>本人確認<span class="ar">${vlabel} ›</span></button>
     <button class="mp-link" onclick="enablePush()"><span class="ic">${svg('bell')}</span>端末通知をオンにする<span class="ar">›</span></button>
     <button class="mp-link" onclick="openUpgrade()"><span class="ic">${svg('star')}</span>プラン・料金<span class="ar">›</span></button>
@@ -1318,7 +1557,7 @@ async function toggleSecret(on){
   catch(e){ const cb=document.getElementById('mySecret'); if(cb)cb.checked=!!me.secret_mode; if(e.status===402){ toast(e.message); openUpgrade(); } else toast(e.message); }
 }
 async function switchPlan(plan){
-  try{ await jpost('/dev/plan',{plan}); await loadMe(); await loadProfiles(); renderMyPagePage(); toast('プランを'+({free:'フリー',standard:'スタンダード',premium:'プレミアム'}[plan]||plan)+'に切り替えました'); }
+  try{ await jpost('/dev/plan',{plan}); await loadMe(); deckItems=[]; deckIdx=0; renderMyPagePage(); toast('プランを'+({free:'フリー',standard:'スタンダード',premium:'プレミアム'}[plan]||plan)+'に切り替えました'); }
   catch(e){ toast(e.message); }
 }
 async function openBlockList(){
@@ -1360,7 +1599,7 @@ function openOnboard(){
 async function submitOnboard(){
   const err=document.getElementById('oErr'); err.textContent='';
   try{ await jpost('/onboard',{display_name:v('oName'),gender:v('oGender'),age:v('oAge'),area:v('oArea')});
-    document.getElementById('onboardScrim').classList.remove('on'); await loadMe(); await loadProfiles(); toast('ようこそ');
+    document.getElementById('onboardScrim').classList.remove('on'); await loadMe(); renderHome(); toast('ようこそ');
     if(me && !me.photo_key) openMyEdit(true);
   }catch(e){ err.textContent=e.message; }
 }
@@ -1389,12 +1628,12 @@ async function submitAuth(isSignup){
   const err=document.getElementById('authErr'); err.textContent='';
   const body={email:v('aEmail'),password:v('aPass')};
   if(isSignup)Object.assign(body,{display_name:v('aName'),gender:v('aGender'),age:v('aAge'),area:v('aArea')});
-  try{await jpost(isSignup?'/signup':'/login',body);closeModals();await loadMe();await loadProfiles();toast('ようこそ');
+  try{await jpost(isSignup?'/signup':'/login',body);closeModals();await loadMe();renderHome();toast('ようこそ');
     if(isSignup && me && !me.photo_key) openMyEdit(true);}
   catch(e){err.textContent=e.message;}
 }
 const v=id=>document.getElementById(id).value.trim();
-async function doLogout(){try{await jpost('/logout',{});}catch{} me=null;renderAuthState();goHome();loadProfiles();toast('ログアウトしました');}
+async function doLogout(){try{await jpost('/logout',{});}catch{} me=null;renderAuthState();goHome();toast('ログアウトしました');}
 function urlB64ToUint8Array(b64){ const pad='='.repeat((4-b64.length%4)%4); const s=(b64+pad).replace(/-/g,'+').replace(/_/g,'/'); const raw=atob(s); const arr=new Uint8Array(raw.length); for(let i=0;i<raw.length;i++)arr[i]=raw.charCodeAt(i); return arr; }
 async function enablePush(){
   if(!me){openAuth('login');return;}
@@ -1427,7 +1666,7 @@ document.getElementById('msgs').addEventListener('click',e=>{ if(!selecting)retu
 
 document.querySelectorAll('[data-ic]').forEach(e=>e.innerHTML=svg(e.dataset.ic));
 (async()=>{
-  await loadMe(); loadProfiles();
+  await loadMe();
   if(me && me.needs_onboarding) openOnboard();
   const sp=new URLSearchParams(location.search);
   if(sp.get('auth_error')) toast('ログインに失敗しました。もう一度お試しください');
