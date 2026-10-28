@@ -1175,10 +1175,11 @@ async function router(){
   }else if(h==='#notice'){
     renderNotice(); openPage('view-notice'); setNav('notice');
   }else if(h==='#terms'||h==='#privacy'||h==='#tokushoho'||h==='#about'){
+    const g=document.getElementById('ageGate'); if(g){ g.classList.remove('on'); g.setAttribute('aria-hidden','true'); }
     renderLegal(h.slice(1)); openPage('view-legal');
   }else{
     if(!anyPageOpen()) document.body.style.overflow='';
-    setNav('home'); renderHome();
+    setNav('home'); renderHome(); ageInit();
   }
 }
 function syncNavFromHash(){ router(); }
